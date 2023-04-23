@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Start-Land-Fluss Game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" />
+    <style>
+      /* Your CSS styles go here */
+    </style>
+  </head>
+  <body>
+    <h1>Start-Land-Fluss Game</h1>
+    <p>Player ID: <span id="player-id"></span></p>
+    <p>Player Name: <span id="player-name"></span></p>
+    <form id="player-name-form">
+      <label for="player-name-input">Enter your player name:</label>
+      <input type="text" id="player-name-input" name="player-name-input" />
+      <button type="submit">Submit</button>
+    </form>
+    <hr />
+    <form id="connect-form">
+      <label for="peer-id">Enter the PeerJS ID of another player:</label>
+      <input type="text" id="peer-id" name="peer-id" />
+      <button type="submit">Connect</button>
+    </form>
+    <ul id="player-list"></ul>
+    <script src="https://unpkg.com/peerjs@1.3.2/dist/peerjs.min.js"></script>
+    <script>
+      // Set up a new PeerJS object
+      const peer = new Peer();
+      peer.on('open', function(id) {
+        console.log('My peer ID is: ' + id);
+        const playerIdDiv = document.getElementById('player-id');
+        playerIdDiv.textContent = id;
+      });
+
+      // Handle the player name form submission
+      const playerNameForm = document.getElementById('player-name-form');
+      const playerNameInput = document.getElementById('player-name-input');
+      playerNameForm.addEventListener('submit', event => {
+        event.preventDefault();
+        const playerName = playerNameInput.value.trim();
+        if (playerName) {
+          const playerId = peer.id;
+          playerNameForm.style.display = 'none';
+          const playerNameDiv = document.getElementById('player-name');
+          playerNameDiv.textContent = playerName;
+          // Save the player name and ID to a global object
+          window.player = { name: playerName, id: playerId };
+        }
+      });
+
+      // Handle the connect form submission
+      window.peerConections = [];
+      const connectForm = document.getElementById('connect-form');
+      const peerIdInput = document.getElementById('peer-id');
+      connectForm.addEventListener('submit', event => {
+        event.preventDefault();
+        const peerId = peerIdInput.value.trim();
+        if (peerId) {
+          // Connect
+          var conn = peer.connect(peerId);
+          // Add connection to global list of peer connections
+          window.peerConections.push(conn);
+          // Set handler for receiving messages
+          conn.on('data', function(data) {
+            console.log('Received', data);
+          });
+        }
+      });
+
+      // Handle incoming connections
+      const playerList = document.getElementById('player-list');
+      peer.on('connection', conn => {
+        const peerId = conn.peer;
+
+        // Check if we already have a connection established to this peer
+        var newConnection = true;
+        for (var i = 0; i < window.peerConections; i++) {
+          if (window.peerConections[i].peer === peerID) {
+            newConnection = false;
+            console.log('already connected to this peer');
+            break;
+          }
+        }
+        // If it’s a new connection
+        if (newConnection) {
+          // Add connection to global list of peer connections
+          window.peerConections.push(conn);
+          // Set handler for receiving messages
+          conn.on('data', function(data) {
+            console.log('Received', data);
+          });
+        }
+      }
+
+      // TODO:
+      // - define function to handle receiving data
+      // - send player name after establishing connection
+      // - ...
+
+      /*
+
+        const listItem = document.createElement('li');
+        listItem.textContent = `Player ${peerId} has joined the game`;
+        playerList.appendChild(listItem);
+
+        // Send the player's name to the connected peer
+        const player = window.player;
+        const playerName = player.playerName;
+        conn.send(playerName);
+
+        // Set a property to store the connected player's name
+        conn.playerName = '';
+
+        conn.on('data', data => {
+          if (!conn.playerName) {
+            // Update the player's name in the list
+            conn.playerName = data;
+            listItem.textContent = `Player ${conn.playerName} (${peerId}) has joined the game`;
+          } else {
+            // Process the received game data
+            console.log(`Received data from peer ${peerId}: ${data}`);
+          }
+        });
+
+      */
+    </script>
+  </body>
+</html>
+
