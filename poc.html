@@ -53,15 +53,29 @@
 
     window.peers = {}
 
+    // Send player name
+    function sendPlayerName(conn) {
+        console.log('sending name');
+        conn.send(
+          {
+            mtype: 'sendName',
+            payload: {
+              name: window.player.name,
+              firstTime: true
+            }
+          }
+        );
+    }
+
     // Handle incoming connections
-    function handleData(data) {
-      console.log('received data:');
-      concole.log(data);
+    function handleData(peerId, data) {
+      console.log('received data from peer ID' + peerId + ':');
+      console.log(data);
       if (data.mtype == 'sendName') {
         // Peer just told us their name
         const peerName = data.payload.name;
         // Store and display name
-        window.peers[conn.peer].peerName = peerName;
+        window.peers[peerId].peerName = peerName;
         const playerList = document.getElementById('player-list');
         const listItem = document.createElement('li');
         listItem.textContent = `Player ${peerName} has joined the game`;
@@ -69,11 +83,11 @@
         // If they don't already know our name, tell them
         if (data.payload.firstTime) {
           console.log('sending name back');
-          conn.send(
+          window.peers[peerId].connection.send(
             {
               mtype: 'sendName',
               payload: {
-                name: window.player.playerName,
+                name: window.player.name,
                 firstTime: false
               }
             }
@@ -95,20 +109,17 @@
         else {
           // Connect
           console.log('connecting to peer');
-          var conn = peer.connect(peerId);
-          // FIXME:
-          // It's not recommended that you use this ID to identify peers,
-          // as it's meant to be used for brokering connections only.
-          // You're recommended to set the metadata option to send other
-          // identifying information.
+          var conn = peer.connect(peerId, {
+            metadata: { msg: 'foobar' }
+          });
 
           // Add peer to global dictionary of peers
           window.peers[peerId] = {
             connection: conn
-          }
+          };
           // Set handler for receiving messages
           conn.on('data', data => {
-            handleData(data);
+            handleData(conn.peer, data);
           });
         }
       }
@@ -118,6 +129,7 @@
     peer.on('connection', conn => {
       const peerId = conn.peer;
       console.log('incoming connection form  peer');
+      console.log('msg: ' + conn.metadata.msg);
 
       // Check if we already have a connection established to this peer
       if (peerId in window.peers) {
@@ -132,19 +144,12 @@
         }
         // Set handler for receiving messages
         conn.on('data', data => {
-          handleData(data);
+          handleData(conn.peer, data);
         });
         // Send own player name to peer
-        console.log('sending name');
-        conn.send(
-          {
-            mtype: 'sendName',
-            payload: {
-              name: window.player.playerName,
-              firstTime: true
-            }
-          }
-        );
+        setTimeout(() => {
+          sendPlayerName(conn);
+        }, 500);
       }
     });
 
