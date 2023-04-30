@@ -19,6 +19,15 @@
           <p>Player ID: <span id="player-id"></span></p>
           <p>Player Name: <span id="player-name"></span>&ensp;<span id="player-color" style="color: white">█</span></p>
         </div>
+      </div>
+      <div class="col-md-6">
+        <h2 class="my-4">Connected Players</h2>
+        <ul id="player-list" class="list-group"></ul>
+      </div>
+    </div>
+    <hr>
+    <div class="row">
+      <div class="col-md-6">
         <form id="player-name-form">
           <div class="mb-3">
             <label for="player-name-input" class="form-label">Enter your player name:</label>
@@ -30,7 +39,9 @@
           </div>
           <button type="submit" class="btn btn-primary">Submit</button>
         </form>
-        <h2 class="my-4">Connect with Another Player</h2>
+      </div>
+      <div class="col-md-6">
+        <h2 class="my-4">Connect with other Players</h2>
         <form id="connect-form">
           <div class="mb-3">
             <label for="peer-id" class="form-label">Enter the PeerJS ID of another player:</label>
@@ -39,11 +50,8 @@
           <button type="submit" class="btn btn-primary">Connect</button>
         </form>
       </div>
-      <div class="col-md-6">
-        <h2 class="my-4">Connected Players</h2>
-        <ul id="player-list" class="list-group"></ul>
-      </div>
     </div>
+    <hr>
 
     <script src="https://unpkg.com/peerjs@1.3.2/dist/peerjs.min.js"></script>
     <script>
@@ -155,6 +163,7 @@
       event.preventDefault();
       const peerId = peerIdInput.value.trim();
       if (peerId) {
+        peerIdInput.value = '';
         if (peerId in window.peers) {
           console.log('already connected to this peer');
         }
