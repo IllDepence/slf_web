@@ -17,12 +17,16 @@
         <h2 class="my-4">Player Information</h2>
         <div class="my-4">
           <p>Player ID: <span id="player-id"></span></p>
-          <p>Player Name: <span id="player-name"></span></p>
+          <p>Player Name: <span id="player-name"></span>&ensp;<span id="player-color" style="color: white">█</span></p>
         </div>
         <form id="player-name-form">
           <div class="mb-3">
             <label for="player-name-input" class="form-label">Enter your player name:</label>
             <input type="text" class="form-control" id="player-name-input" name="player-name-input" />
+          </div>
+          <div class="mb-3">
+            <label for="player-color-input" class="form-label">Choose your color:</label>
+            <input type="color" class="form-control form-control-color" id="player-color-input" name="player-color-input" />
           </div>
           <button type="submit" class="btn btn-primary">Submit</button>
         </form>
@@ -43,6 +47,32 @@
 
     <script src="https://unpkg.com/peerjs@1.3.2/dist/peerjs.min.js"></script>
     <script>
+
+    /* FIXME: re-using IDs makes it necessary for clients to check if 
+              a connection is "still alive" of needs to be re-established
+    // Set up a new PeerJS object
+    function showPlayerId(id) {
+        const playerIdDiv = document.getElementById('player-id');
+        playerIdDiv.textContent = id;
+    }
+    if (localStorage.getItem('slfID')) {
+      // use existing ID if exists
+      const slfID = localStorage.getItem('slfID');
+      console.log(`Reusing saved peer ID: ${slfID}`);
+      peer = new Peer(slfID);
+      showPlayerId(slfID);
+    } else {
+      // Get an new ID for peer discovery
+      peer = new Peer();
+      peer.on('open', id => {
+        console.log(`Got new ID: ${id}`);
+        localStorage.setItem('slfID', id);
+        showPlayerId(id);
+      });
+    }
+   */
+
+
     // Set up a new PeerJS object
     const peer = new Peer();
     // Get an ID for peer discovery
@@ -55,16 +85,20 @@
     // Handle player name form submission
     const playerNameForm = document.getElementById('player-name-form');
     const playerNameInput = document.getElementById('player-name-input');
+    const playerColorInput = document.getElementById('player-color-input');
     playerNameForm.addEventListener('submit', event => {
       event.preventDefault();
       const playerName = playerNameInput.value.trim();
-      if (playerName) {
+      const playerColor = playerColorInput.value.trim();
+      if (playerName && playerColor) {
         const playerId = peer.id;
         playerNameForm.style.display = 'none';
-        const playerNameDiv = document.getElementById('player-name');
-        playerNameDiv.textContent = playerName;
+        const playerNameSpan = document.getElementById('player-name');
+        const playerColorSpan = document.getElementById('player-color');
+        playerNameSpan.textContent = playerName;
+        playerColorSpan.style.color = playerColor;
         // Save the player name and ID to a global object
-        window.player = { name: playerName, id: playerId };
+        window.player = { name: playerName, color: playerColor, id: playerId };
       }
     });
 
@@ -75,9 +109,9 @@
         console.log('sending name');
         conn.send(
           {
-            mtype: 'sendName',
+            mtype: 'sendPlayerInfo',
             payload: {
-              name: window.player.name,
+              info: window.player,
               firstTime: true
             }
           }
@@ -88,23 +122,24 @@
     function handleData(peerId, data) {
       console.log('received data from peer ID' + peerId + ':');
       console.log(data);
-      if (data.mtype == 'sendName') {
+      if (data.mtype == 'sendPlayerInfo') {
         // Peer just told us their name
-        const peerName = data.payload.name;
+        const peerName = data.payload.info.name;
+        const peerColor = data.payload.info.color;
         // Store and display name
         window.peers[peerId].peerName = peerName;
         const playerList = document.getElementById('player-list');
         const listItem = document.createElement('li');
-        listItem.textContent = peerName;
+        listItem.innerHTML = `${peerName}&ensp;<span style="color: ${peerColor}">█</span>`;
         playerList.appendChild(listItem);
         // If they don't already know our name, tell them
         if (data.payload.firstTime) {
           console.log('sending name back');
           window.peers[peerId].connection.send(
             {
-              mtype: 'sendName',
+              mtype: 'sendPlayerInfo',
               payload: {
-                name: window.player.name,
+                info: window.player,
                 firstTime: false
               }
             }
