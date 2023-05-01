@@ -60,15 +60,15 @@
             <h2 class="subtitle">Server ID</h2>
           </div>
           <div class="field has-addons">
-            <input class="input" type="text" readonly value="9a24944a-b191-4760-8c41-e75c1dcb07a6">
-            <a class="button is-success">Copy</a>
+            <input class="input" type="text" id="serverId" readonly value="">
+            <a class="button is-success" id="copyServerId">Copy</a>
           </div>
           <div class="field">
             <h2 class="subtitle">Password</h2>
           </div>
           <div class="field has-addons">
-            <input class="input" type="text" placeholder="Set a password">
-            <a class="button is-light">Set</a>
+            <input class="input" type="text" id="serverPw" placeholder="Set a password">
+            <a class="button is-light" id="serverPwSet">Set</a>
           </div>
         </div>
         <div class="column is-offset-1">
@@ -76,7 +76,7 @@
             <h2 class="subtitle">Players</h2>
           </div>
           <div class="table-container">
-            <table class="table is-fullwidth">
+            <table class="table is-fullwidth" id="playerList">
               <thead>
                 <tr>
                   <th><abbr title="Color">Color</abbr></th>
@@ -86,18 +86,6 @@
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td class="has-text-primary">●</td>
-                  <td>FooBar</td>
-                  <td>944a9a24-8c41-4760-b191-edcb075c17a6</td>
-                  <td>1337</td>
-                </tr>
-                <tr>
-                  <td class="has-text-link">●</td>
-                  <td>BamBaz</td>
-                  <td>a24944a9-7641-48c0-edcb-0b19175c17a6</td>
-                  <td>1337</td>
-                </tr>
               </tbody>
             </table>
           </div>
@@ -105,6 +93,88 @@
       </div>
     </div>
   </section>
+
+  <script src="https://unpkg.com/peerjs@1.3.2/dist/peerjs.min.js"></script>
+  <script>
+
+  window.players = {}
+
+  // Set up a new PeerJS object
+  const peer = new Peer();
+  // Get an ID for peer discovery
+  peer.on('open', id => {
+    console.log('My peer ID is: ' + id);
+    const serverIdInput = document.getElementById('serverId');
+    serverIdInput.value = id;
+  });
+
+  // Update player list
+  function updatePlayerList() {
+    console.log('updating player list');
+    const playerTableBody = document.querySelector("#playerList tbody");
+    for (const peerId in window.players) {
+      console.log(window.players[peerId]);
+      const player = window.players[peerId];
+      const row = playerTableBody.insertRow();
+      const colorCell = row.insertCell();
+      colorCell.style.color = player.connection.metadata.playerColor;
+      colorCell.innerHTML = "●";
+      const nameCell = row.insertCell();
+      nameCell.textContent = player.connection.metadata.playerName;
+      const idCell = row.insertCell();
+      idCell.textContent = player.connection.peer;
+      const pointsCell = row.insertCell();
+      pointsCell.textContent = "0"; // FIXME
+    }
+  }
+
+  // Handle incoming new connections
+  peer.on('connection', conn => {
+    const peerId = conn.peer;
+    console.log('incoming connection form player');
+    console.log('metadata: ' + conn.metadata);
+
+    // Check password
+    if (conn.metadata.serverPw != window.serverPw) {
+      console.log('passowrd wrong');
+    }
+    else if (peerId in window.players) {
+      // Check if we already have a connection established to this peer
+      console.log('player already connected');
+    }
+    else {
+      // If it’s a new connection
+      console.log('adding new player');
+      // Add connection to global list of peer connections
+      window.players[peerId] = {
+        connection: conn
+      }
+      updatePlayerList();
+      // Set handler for receiving messages
+      conn.on('data', data => {
+        handleData(conn.peer, data);
+      });
+    }
+  });
+
+  // Server setup UI stuff
+  const serverIdInput = document.getElementById("serverId");
+  const copyServerIdButton = document.getElementById("copyServerId");
+  const serverPwInput = document.getElementById("serverPw");
+  const serverPwSetButton = document.getElementById("serverPwSet");
+  // Copy serverId value to clipboard
+  copyServerIdButton.addEventListener("click", () => {
+    serverIdInput.select();
+    document.execCommand("copy");
+  });
+  // Get serverPw value
+  window.serverPw = "";
+  serverPwSetButton.addEventListener("click", () => {
+    serverPwInput.readOnly = true;
+    window.serverPw = serverPwInput.value;
+  });
+
+  </script>
 
   <!-- # # # # # # # # # # # # # # # # # # # # # # # # # # # -->
 
