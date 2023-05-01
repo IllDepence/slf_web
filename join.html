@@ -54,18 +54,34 @@
 
   <section class="section mt-6">
     <div class="buttons is-centered mb-0" style="width: 100%">
+    <form action="play.html" method="get">
       <div class="field has-addons">
-        <input class="input is-focused" type="text" placeholder="Paste server ID">
-        <a class="button is-success">Join</a>
+        <input type="hidden" id="playerName" name="playerName">
+        <input type="hidden" id="playerColor" name="playerColor">
+        <input class="input is-focused" type="text" id="serverId" name="serverId" placeholder="Paste server ID" required>
+        <input class="button is-success" type="submit" value="Join">
       </div>
     </div>
     <div class="buttons is-centered" style="width: 100%">
       <div class="field has-addons">
-        <input class="input" type="text" placeholder="Password">
+        <input class="input" type="text" id="serverPw" name="serverPw" placeholder="Password">
         <a class="button is-invisible">Join</a>
       </div>
+    </form>
     </div>
   </section>
+
+  <script>
+  // Get parameters from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const playerName = urlParams.get('playerName');
+  const playerColor = urlParams.get('playerColor');
+  // Set hidden input values
+  const playerNameInput = document.querySelector('#playerName');
+  const playerColorInput = document.querySelector('#playerColor');
+  playerNameInput.value = playerName;
+  playerColorInput.value = playerColor;
+  </script>
 
   <!-- # # # # # # # # # # # # # # # # # # # # # # # # # # # -->
 

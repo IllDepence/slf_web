@@ -52,45 +52,17 @@
 
   <!-- # # # # # # # # # # # # # # # # # # # # # # # # # # # -->
 
-  <section class="section">
-    <div class="table-container">
-      <table class="table is-fullwidth">
-        <thead>
-          <tr>
-            <th><abbr title="Stadt">Stadt</abbr></th>
-            <th><abbr title="Land">Land</abbr></th>
-            <th><abbr title="Fluss">Fluss</abbr></th>
-            <th><abbr title="Punkte">P</abbr></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>...</td>
-            <td>...</td>
-            <td>...</td>
-            <td>0</td>
-          </tr>
-        </tbody>
-      </table>
+  <section class="section mt-6">
+    <form action="join.html" method="get">
+    <div class="buttons is-centered mb-0" style="width: 100%">
+      <div class="field has-addons">
+        <input class="input" type="color" id="playerColor" name="playerColor" value="#000" style="width: 4em;">
+        <input class="input is-focused" type="text" id="playerName" name="playerName" placeholder="Player name" required>
+        <input class="button is-success" type="submit" value="Choose Server">
+      </div>
+    </form>
     </div>
   </section>
-
-  <section>
-    <hr class="hr">
-    <div class="level">
-      <p class="level-item has-text-centered"><span class="has-text-primary">●</span>&nbsp;FooBar</p>
-      <p class="level-item has-text-centered"><span class="has-text-link">●</span>&nbsp;BamBaz</p>
-    </div>
-  </section>
-
-  <script>
-  // Get parameters from URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const playerName = urlParams.get('playerName');
-  const playerColor = urlParams.get('playerColor');
-  const serverId = urlParams.get('serverId');
-  const serverPw = urlParams.get('serverPw');
-  </script>
 
   <!-- # # # # # # # # # # # # # # # # # # # # # # # # # # # -->
 
