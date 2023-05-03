@@ -112,6 +112,7 @@
   function updatePlayerList() {
     console.log('updating player list');
     const playerTableBody = document.querySelector("#playerList tbody");
+    playerTableBody.innerHTML = '';
     for (const peerId in window.players) {
       console.log(window.players[peerId]);
       const player = window.players[peerId];
