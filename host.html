@@ -70,6 +70,13 @@
             <input class="input" type="text" id="serverPw" placeholder="Set a password">
             <a class="button is-light" id="serverPwSet">Set</a>
           </div>
+          <div class="field">
+            <h2 class="subtitle">Game columns</h2>
+          </div>
+          <div class="field">
+            <textarea class="textarea" id="gameColumns" placeholder="Stadt, Land, Fluss, ..."></textarea>
+            <a class="button is-warning" id="gameColumnsSet">Set Columns</a>
+          </div>
         </div>
         <div class="column is-offset-1">
           <div class="field">
@@ -173,6 +180,41 @@
   serverPwSetButton.addEventListener("click", () => {
     serverPwInput.readOnly = true;
     window.serverPw = serverPwInput.value;
+  });
+  // Handle setting of game columns
+  const gameColumns = document.getElementById("gameColumns");
+  const parsedColumns = [];
+  // Input validation
+  function checkGameColumns() {
+    const regex = /^(?!\s*,)(?!.*,\s*$)(?!.*,\s*,).+$/;
+    const gameColumnsSet = document.getElementById("gameColumnsSet");
+    if (!regex.test(gameColumns.value)) {
+      gameColumns.classList.add("is-invalid");
+      gameColumns.style.backgroundColor = "#ffe5e5";
+      gameColumnsSetText = 'Set Columns';
+    } else {
+      gameColumns.classList.remove("is-invalid");
+      gameColumns.style.backgroundColor = "";
+      const columns = gameColumns.value.split(/\s*,\s*/);
+      const numCols = columns.length;
+      gameColumnsSetText = `Set Columns (${numCols})`;
+    }
+    gameColumnsSet.textContent = gameColumnsSetText;
+  }
+  checkGameColumns(); // run prior to user input once
+  gameColumns.addEventListener("input", checkGameColumns);
+  // Set columns button
+  const gameColumnsSet = document.getElementById("gameColumnsSet");
+  gameColumnsSet.addEventListener("click", () => {
+    if (!gameColumns.classList.contains("is-invalid")) {
+      gameColumnsSet.classList.remove("is-warning");
+      gameColumnsSet.classList.add("is-success");
+      gameColumnsSet.textContent = "Done";
+      const columns = gameColumns.value.split(/\s*,\s*/);
+      parsedColumns.push(...columns);
+      console.log(parsedColumns);
+      gameColumns.disabled = true;
+    }
   });
 
   </script>
