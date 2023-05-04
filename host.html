@@ -60,7 +60,7 @@
             <h2 class="subtitle">Server ID</h2>
           </div>
           <div class="field has-addons">
-            <input class="input" type="text" id="serverId" readonly value="">
+            <input class="input" type="text" id="serverId" readonly placeholder="(set game columns first)">
             <a class="button is-success" id="copyServerId">Copy</a>
           </div>
           <div class="field">
@@ -111,8 +111,6 @@
   // Get an ID for peer discovery
   peer.on('open', id => {
     console.log('My peer ID is: ' + id);
-    const serverIdInput = document.getElementById('serverId');
-    serverIdInput.value = id;
   });
 
   // Update player list
@@ -162,8 +160,20 @@
       conn.on('data', data => {
         handleData(conn.peer, data);
       });
+      // Send game colums to player
+      setTimeout(() => {
+        sendGameColumns(conn);
+      }, 500);
     }
   });
+
+  function sendGameColumns(conn) {
+      console.log('sending game columns');
+      conn.send({
+        mType: 'gameColumns',
+        payload: window.gameColumns
+      });
+  }
 
   // Server setup UI stuff
   const serverIdInput = document.getElementById("serverId");
@@ -179,6 +189,8 @@
   window.serverPw = "";
   serverPwSetButton.addEventListener("click", () => {
     serverPwInput.readOnly = true;
+    serverPwSetButton.textContent = "Done";
+    serverPwSetButton.classList.remove("is-light");
     window.serverPw = serverPwInput.value;
   });
   // Handle setting of game columns
@@ -208,12 +220,15 @@
   gameColumnsSet.addEventListener("click", () => {
     if (!gameColumns.classList.contains("is-invalid")) {
       gameColumnsSet.classList.remove("is-warning");
-      gameColumnsSet.classList.add("is-success");
+      gameColumnsSet.disabled = true;
       gameColumnsSet.textContent = "Done";
       const columns = gameColumns.value.split(/\s*,\s*/);
       parsedColumns.push(...columns);
-      console.log(parsedColumns);
+      window.gameColumns = parsedColumns;
       gameColumns.disabled = true;
+      // Reveal server ID for copying
+      const serverIdInput = document.getElementById('serverId');
+      serverIdInput.value = peer.id;
     }
   });
 

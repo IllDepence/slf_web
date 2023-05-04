@@ -108,7 +108,17 @@
         serverPw: serverPw
       }
     });
+    // Set handler for receiving messages
+    conn.on('data', data => {
+      handleData(data);
+    });
   });
+
+  // Handle incoming data
+  function handleData(data) {
+    console.log('received data from server');
+    console.log(data);
+  }
 
   </script>
 
