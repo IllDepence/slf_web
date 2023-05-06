@@ -159,17 +159,17 @@
     var rowToFill = tbody.lastChild;
     var numCols = rowToFill.getElementsByTagName('td').length;
     for (var i = 0; i < numCols; i++) {
-      // get the value of the corresponding input field
+      // get the answer in the corresponding input field
       var input = document.getElementById(`answer_input_${i}`);
-      var value = input.value;
-      // put the value in the answer table
+      var peerDots = document.getElementById(`peer_dots_${i}`);
+      var answer = input.value;
+      // put the answer and dots in the answer table
       var cell = rowToFill.getElementsByClassName(`answer_${i}`)[0];
-      cell.innerHTML = value;
+      cell.innerHTML = `${answer} ${peerDots.innerHTML}`;
       // clear the input field and make it editable
       input.value = '';
       input.disabled = false;
       // empty the peer dots
-      var peerDots = document.getElementById(`peer_dots_${i}`);
       peerDots.innerHTML = '';
     }
   }
