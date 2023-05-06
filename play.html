@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Hello Bulma!</title>
+    <title>SLF</title>
     <link rel="stylesheet" href="css/bulma.min.css">
     <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"> -->
   </head>
@@ -54,7 +54,7 @@
 
   <section class="section">
     <div class="table-container">
-      <table class="table is-fullwidth" id="gameAnswerTable">
+      <table class="table is-fullwidth is-striped" id="gameAnswerTable">
         <thead>
         </thead>
         <tbody>
@@ -129,7 +129,7 @@
             return;
           }
           // if it's the points field
-            if (input.classList.contains('answer_points')) {
+          if (input.classList.contains('answer_points')) {
             // add a new answer row to fill
             addAnswerRow();
             // get the last row of the answer table
@@ -149,12 +149,35 @@
               input.disabled = false;
             }
           }
+          // if it's an answer field
+          else {
+            // send the answer to the server
+            column_index = input.id.split('_')[2];
+            sendSingleAnswer(column_index, value);
+            // make the field uneditable
+            input.disabled = true;
+            // focus on the next field
+            var nextInput = input.parentElement.nextSibling.firstChild;
+            nextInput.focus();
+          }
           // ----
         }
       });
       input.classList.add('input');
       cell.appendChild(input);
     }
+  }
+
+  // Function sending a single column answer to the server
+  function sendSingleAnswer(column_index, value) {
+    console.log(`Sending answer ${value} for column ${column_index} to server`);
+    window.serverConn.send({
+      mType: 'singleAnswer',
+      payload: {
+        column_index: column_index,
+        value: value
+      }
+    });
   }
 
   // Function for adding a new row to the answers table
@@ -204,7 +227,7 @@
     window.playerId = id;
     // Connect to server
     console.log('Connecting to server');
-    var conn = peer.connect(serverId, {
+    window.serverConn = peer.connect(serverId, {
       metadata: {
         playerName: playerName,
         playerColor: playerColor,
@@ -212,7 +235,7 @@
       }
     });
     // Set handler for receiving messages
-    conn.on('data', data => {
+    serverConn.on('data', data => {
       handleData(data);
     });
   });
