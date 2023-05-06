@@ -54,22 +54,10 @@
 
   <section class="section">
     <div class="table-container">
-      <table class="table is-fullwidth">
+      <table class="table is-fullwidth" id="gameTable">
         <thead>
-          <tr>
-            <th><abbr title="Stadt">Stadt</abbr></th>
-            <th><abbr title="Land">Land</abbr></th>
-            <th><abbr title="Fluss">Fluss</abbr></th>
-            <th><abbr title="Punkte">P</abbr></th>
-          </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>...</td>
-            <td>...</td>
-            <td>...</td>
-            <td>0</td>
-          </tr>
         </tbody>
       </table>
     </div>
@@ -77,9 +65,7 @@
 
   <section>
     <hr class="hr">
-    <div class="level">
-      <p class="level-item has-text-centered"><span class="has-text-primary">●</span>&nbsp;FooBar</p>
-      <p class="level-item has-text-centered"><span class="has-text-link">●</span>&nbsp;BamBaz</p>
+    <div class="level" id="playerList">
     </div>
   </section>
 
@@ -92,6 +78,51 @@
   const serverId = urlParams.get('serverId');
   const serverPw = urlParams.get('serverPw');
 
+  // Fill game table
+  function fillGameTable(column_names) {
+    // append points column
+    column_names.push('P');
+    var table = document.getElementById('gameTable');
+    var thead = table.getElementsByTagName('thead')[0];
+    var tbody = table.getElementsByTagName('tbody')[0];
+    var row = thead.insertRow();
+    for (var i = 0; i < column_names.length; i++) {
+      var cell = row.insertCell();
+      cell.innerHTML = column_names[i];
+    }
+    var row = tbody.insertRow();
+    for (var i = 0; i < column_names.length; i++) {
+      var cell = row.insertCell();
+      // put text fields inside table cells
+      var input = document.createElement('input');
+      input.type = 'text';
+      input.id = `answer_${i}`;
+      cell.appendChild(input);
+    }
+  }
+
+  // Update player list
+  function updatePlayerList(playerList) {
+    console.log('updating player list');
+    var playerListFooter = document.getElementById('playerList');
+    playerListFooter.innerHTML = '';
+    playerList.forEach(player => {
+      console.log(player);
+      // skip if player is ourselves
+      if (player.id == window.playerId) {
+        return;
+      }
+      var p = document.createElement('p');
+      p.classList.add('level-item');
+      p.classList.add('has-text-centered');
+      var span = document.createElement('span');
+      span.style.color = player.color;
+      span.innerHTML = '●';
+      p.appendChild(span);
+      p.innerHTML += '&nbsp;' + player.name;
+      playerListFooter.appendChild(p);
+    });
+  }
 
   // Set up a new PeerJS object
   const peer = new Peer();
@@ -118,6 +149,12 @@
   function handleData(data) {
     console.log('received data from server');
     console.log(data);
+    if (data.mType == 'gameColumns') {
+      fillGameTable(data.payload);
+    }
+    if (data.mType == 'playerList') {
+      updatePlayerList(data.payload);
+    }
   }
 
   </script>

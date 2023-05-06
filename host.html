@@ -134,6 +134,30 @@
     }
   }
 
+  // Send current player list to all connected peers
+  function sendPlayerList() {
+    console.log('sending player list');
+    // prepare simplified list of players with name and color
+    const simplePlayerList = [];
+    for (const peerId in window.players) {
+      const player = window.players[peerId];
+      simplePlayerList.push({
+        id: peerId,
+        name: player.connection.metadata.playerName,
+        color: player.connection.metadata.playerColor
+      });
+    }
+    // send to all players in playerList
+    for (const peerId in window.players) {
+      console.log('sending updated player list to ' + peerId);
+      const player = window.players[peerId];
+      player.connection.send({
+        mType: 'playerList',
+        payload: simplePlayerList
+      });
+    }
+  }
+
   // Handle incoming new connections
   peer.on('connection', conn => {
     const peerId = conn.peer;
@@ -160,9 +184,13 @@
       conn.on('data', data => {
         handleData(conn.peer, data);
       });
-      // Send game colums to player
+      // Send game colums to new player
       setTimeout(() => {
         sendGameColumns(conn);
+      }, 500);
+      // Send updated player list to all players
+      setTimeout(() => {
+        sendPlayerList();
       }, 500);
     }
   });
