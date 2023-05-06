@@ -54,9 +54,15 @@
 
   <section class="section">
     <div class="table-container">
-      <table class="table is-fullwidth" id="gameTable">
+      <table class="table is-fullwidth" id="gameAnswerTable">
         <thead>
         </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-container">
+      <table class="table is-fullwidth" id="gameInputTable">
         <tbody>
         </tbody>
       </table>
@@ -82,22 +88,88 @@
   function fillGameTable(column_names) {
     // append points column
     column_names.push('P');
-    var table = document.getElementById('gameTable');
-    var thead = table.getElementsByTagName('thead')[0];
-    var tbody = table.getElementsByTagName('tbody')[0];
+    // create answer table header
+    var answerTable = document.getElementById('gameAnswerTable');
+    var thead = answerTable.getElementsByTagName('thead')[0];
     var row = thead.insertRow();
     for (var i = 0; i < column_names.length; i++) {
-      var cell = row.insertCell();
-      cell.innerHTML = column_names[i];
+      var th = document.createElement('th');
+      th.innerHTML = column_names[i];
+      row.appendChild(th);
     }
+    // create input table body
+    var inputTable = document.getElementById('gameInputTable');
+    var tbody = inputTable.getElementsByTagName('tbody')[0];
     var row = tbody.insertRow();
     for (var i = 0; i < column_names.length; i++) {
       var cell = row.insertCell();
       // put text fields inside table cells
       var input = document.createElement('input');
       input.type = 'text';
-      input.id = `answer_${i}`;
+      // if it's the rightmost column, make it a number field
+      if (i == column_names.length - 1) {
+        input.type = 'number';
+        input.classList.add('answer_points');
+      }
+      input.id = `answer_input_${i}`;
+      // add event listener to input
+      // answer cells:
+      // when the field is non empty and the user presses enter,
+      // make the field uneditable and focus on the next field
+      // points cell:
+      // when the field is non empty and the user presses enter,
+      // put all the values of the input table into the answer table
+      // and clear the input table
+      input.addEventListener('keyup', function(event) {
+        if (event.keyCode === 13) {
+          var input = event.target;
+          var value = input.value;
+          if (value == '') {
+            // if the field is empty, stop
+            return;
+          }
+          // if it's the points field
+            if (input.classList.contains('answer_points')) {
+            // add a new answer row to fill
+            addAnswerRow();
+            // get the last row of the answer table
+            var answerTable = document.getElementById('gameAnswerTable');
+            var tbody = answerTable.getElementsByTagName('tbody')[0];
+            var rowToFill = tbody.lastChild;
+            var numCols = rowToFill.getElementsByTagName('td').length;
+            for (var i = 0; i < numCols; i++) {
+              // get the value of the corresponding input field
+              var input = document.getElementById(`answer_input_${i}`);
+              var value = input.value;
+              // put the value in the answer table
+              var cell = rowToFill.getElementsByClassName(`answer_${i}`)[0];
+              cell.innerHTML = value;
+              // clear the input field and make it editable
+              input.value = '';
+              input.disabled = false;
+            }
+          }
+          // ----
+        }
+      });
+      input.classList.add('input');
       cell.appendChild(input);
+    }
+  }
+
+  // Function for adding a new row to the answers table
+  // each table cell gets an id of the form 'answer_<col>'
+  function addAnswerRow() {
+    var answerTable = document.getElementById('gameAnswerTable');
+    var thead = answerTable.getElementsByTagName('thead')[0];
+    var numCols = thead.getElementsByTagName('th').length;
+    console.log(numCols);
+    var tbody = answerTable.getElementsByTagName('tbody')[0];
+    var row = tbody.insertRow();
+    for (var i = 0; i < numCols; i++) {
+      var cell = row.insertCell();
+      cell.classList.add(`answer_${i}`);
+      cell.innerHTML = '';
     }
   }
 
