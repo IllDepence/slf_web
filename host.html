@@ -206,10 +206,6 @@
   function sendSingleAnswerToAllPlayers(answeredPlayerId, data) {
     var answeredPlayer = window.players[answeredPlayerId];
     for (const recepientPlayerId in window.players) {
-      if (recepientPlayerId == answeredPlayerId) {
-        // skip the player who sent the answer
-        continue;
-      }
       const recepientPlayer = window.players[recepientPlayerId];
       recepientPlayer.connection.send({
         mType: 'otherPlayerSingleAnswer',

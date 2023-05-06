@@ -112,16 +112,9 @@
         input.type = 'number';
         input.classList.add('answer_points');
       }
-      // add event listener to input
-      // answer cells:
-      // when the field is non empty and the user presses enter,
-      // make the field uneditable and focus on the next field
-      // points cell:
-      // when the field is non empty and the user presses enter,
-      // put all the values of the input table into the answer table
-      // and clear the input table
       input.addEventListener('keyup', function(event) {
         if (event.keyCode === 13) {
+          // on enter
           var input = event.target;
           var value = input.value;
           if (value == '') {
@@ -132,25 +125,8 @@
           if (input.classList.contains('answer_points')) {
             // add a new answer row to fill
             addAnswerRow();
-            // get the last row of the answer table
-            var answerTable = document.getElementById('gameAnswerTable');
-            var tbody = answerTable.getElementsByTagName('tbody')[0];
-            var rowToFill = tbody.lastChild;
-            var numCols = rowToFill.getElementsByTagName('td').length;
-            for (var i = 0; i < numCols; i++) {
-              // get the value of the corresponding input field
-              var input = document.getElementById(`answer_input_${i}`);
-              var value = input.value;
-              // put the value in the answer table
-              var cell = rowToFill.getElementsByClassName(`answer_${i}`)[0];
-              cell.innerHTML = value;
-              // clear the input field and make it editable
-              input.value = '';
-              input.disabled = false;
-              // empty the peer dots
-              var peerDots = document.getElementById(`peer_dots_${i}`);
-              peerDots.innerHTML = '';
-            }
+            // submit answer inputs to table
+            submitAnswerInputs();
           }
           // if it's an answer field
           else {
@@ -163,9 +139,9 @@
             var nextInput = input.parentElement.nextSibling.firstChild;
             nextInput.focus();
           }
-          // ----
         }
       });
+      // put the input field into the cell
       input.classList.add('input');
       cell.appendChild(input);
       // put an empty div below the input field
@@ -175,7 +151,30 @@
     }
   }
 
-  // Function sending a single column answer to the server
+  function submitAnswerInputs() {
+    // put the values of the input table into the answer table
+    // and clear the input table
+    var answerTable = document.getElementById('gameAnswerTable');
+    var tbody = answerTable.getElementsByTagName('tbody')[0];
+    var rowToFill = tbody.lastChild;
+    var numCols = rowToFill.getElementsByTagName('td').length;
+    for (var i = 0; i < numCols; i++) {
+      // get the value of the corresponding input field
+      var input = document.getElementById(`answer_input_${i}`);
+      var value = input.value;
+      // put the value in the answer table
+      var cell = rowToFill.getElementsByClassName(`answer_${i}`)[0];
+      cell.innerHTML = value;
+      // clear the input field and make it editable
+      input.value = '';
+      input.disabled = false;
+      // empty the peer dots
+      var peerDots = document.getElementById(`peer_dots_${i}`);
+      peerDots.innerHTML = '';
+    }
+  }
+
+  // Send a single column answer to the server
   function sendSingleAnswer(column_index, value) {
     console.log(`Sending answer ${value} for column ${column_index} to server`);
     window.serverConn.send({
@@ -187,7 +186,7 @@
     });
   }
 
-  // App peer dot for single answer from other player
+  // Add a peer dot for single answer from other player
   function addPeerDot(payload) {
     console.log('adding peer dot');
     var otherPlayer = payload.player;
@@ -200,8 +199,7 @@
     peerDots.appendChild(dot);
   }
 
-  // Function for adding a new row to the answers table
-  // each table cell gets an id of the form 'answer_<col>'
+  // Add a new row to the answers table
   function addAnswerRow() {
     var answerTable = document.getElementById('gameAnswerTable');
     var thead = answerTable.getElementsByTagName('thead')[0];
@@ -211,6 +209,7 @@
     var row = tbody.insertRow();
     for (var i = 0; i < numCols; i++) {
       var cell = row.insertCell();
+      // table cell gets an id of the form 'answer_<col>'
       cell.classList.add(`answer_${i}`);
       cell.innerHTML = '';
     }
