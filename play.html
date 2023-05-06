@@ -103,15 +103,15 @@
     var row = tbody.insertRow();
     for (var i = 0; i < column_names.length; i++) {
       var cell = row.insertCell();
-      // put text fields inside table cells
+      // put text field inside table cell
       var input = document.createElement('input');
+      input.id = `answer_input_${i}`;
       input.type = 'text';
       // if it's the rightmost column, make it a number field
       if (i == column_names.length - 1) {
         input.type = 'number';
         input.classList.add('answer_points');
       }
-      input.id = `answer_input_${i}`;
       // add event listener to input
       // answer cells:
       // when the field is non empty and the user presses enter,
@@ -147,6 +147,9 @@
               // clear the input field and make it editable
               input.value = '';
               input.disabled = false;
+              // empty the peer dots
+              var peerDots = document.getElementById(`peer_dots_${i}`);
+              peerDots.innerHTML = '';
             }
           }
           // if it's an answer field
@@ -165,6 +168,10 @@
       });
       input.classList.add('input');
       cell.appendChild(input);
+      // put an empty div below the input field
+      var peerDots = document.createElement('div');
+      peerDots.id = `peer_dots_${i}`;
+      cell.appendChild(peerDots);
     }
   }
 
@@ -178,6 +185,19 @@
         value: value
       }
     });
+  }
+
+  // App peer dot for single answer from other player
+  function addPeerDot(payload) {
+    console.log('adding peer dot');
+    var otherPlayer = payload.player;
+    var column_index = payload.column_index;
+    console.log('adding peer dot');
+    var peerDots = document.getElementById(`peer_dots_${payload.column_index}`);
+    var dot = document.createElement('span');
+    dot.style.color = otherPlayer.color;
+    dot.innerHTML = '●';
+    peerDots.appendChild(dot);
   }
 
   // Function for adding a new row to the answers table
@@ -249,6 +269,9 @@
     }
     if (data.mType == 'playerList') {
       updatePlayerList(data.payload);
+    }
+    if (data.mType == 'otherPlayerSingleAnswer') {
+      addPeerDot(data.payload);
     }
   }
 

@@ -199,7 +199,29 @@
     console.log('received data from ' + playerId);
     console.log(data);
     if (data.mType == 'singleAnswer') {
-      // TODO
+      sendSingleAnswerToAllPlayers(playerId, data);
+    }
+  }
+
+  function sendSingleAnswerToAllPlayers(answeredPlayerId, data) {
+    var answeredPlayer = window.players[answeredPlayerId];
+    for (const recepientPlayerId in window.players) {
+      if (recepientPlayerId == answeredPlayerId) {
+        // skip the player who sent the answer
+        continue;
+      }
+      const recepientPlayer = window.players[recepientPlayerId];
+      recepientPlayer.connection.send({
+        mType: 'otherPlayerSingleAnswer',
+        payload: {
+          column_index: data.payload.column_index,
+          player: {
+            id: answeredPlayerId,
+            name: answeredPlayer.connection.metadata.playerName,
+            color: answeredPlayer.connection.metadata.playerColor
+          },
+        }
+      });
     }
   }
 
