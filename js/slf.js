@@ -56,7 +56,22 @@ class Round {
 
 class Game {
 
+  // init view element IDs
+  #startScreenElemId = "startScreen";
+  #initPlayButtonElemId = "initPlayButton";
+  #initHostButtonElemId = "initHostButton";
+  // choose name view element IDs
+  #chooseNameScreenElemId = "chooseNameScreen";
+  #chooseNameButtonElemId = "chooseNameButton";
+  #playerColorInputElemId = "playerColorInput";
+  #playerNameInputElemId = "playerNameInput";
+  // choose server view element IDs
+  #chooseServerScreenElemId = "chooseServerScreen";
+  #chooseServerButtonElemId = "chooseServerButton";
+  #serverIdPlayerInputElemId = "serverIdPlayerInput";
+  #serverPwPlayerInputElemId = "serverPwPlayerInput";
   // server view element IDs
+  #hostScreenElemId = "serverScreen";
   #serverIdInputElemId = "serverId";
   #serverIdCopyElemId = "copyServerId";
   #serverPwInputElemId = "serverPw";
@@ -65,16 +80,21 @@ class Game {
   #gameColumnsSetElemId = "gameColumnsSet";
   #playerListElemId = "playerList";
   // player view element IDs
+  #playScreenElemId = "playScreen";
   #gameAnswerTableElemId = "gameAnswerTable";
   #gameInputTableElemId = "gameInputTable";
   #peerListElemId = "peerList";
 
-  constructor(columns, players = [], rounds = [], serverID = null) {
-    // basic setup with columns attribute being required
+  constructor(columns = [], players = [], rounds = [], serverID = null) {
     this.columns = columns;
     this.players = players;
     this.rounds = rounds;
     this.serverID = serverID;
+    this.uiState = "start";
+    document.addEventListener('DOMContentLoaded', () => {
+      this.setUiEventListeners();
+      this.drawBaseUi();
+    });
   }
 
   updateState(columns, players, rounds) {
@@ -117,6 +137,7 @@ class Game {
       ),
       0
     );
+  }
 
   getScoreCurrentRound(player) {
     return this.sumScore([this.getCurrentRound()]);
@@ -126,13 +147,65 @@ class Game {
     return this.sumScore(this.rounds);
   }
 
+  setUiState(state) {
+    this.uiState = state;
+    this.drawBaseUi();
+  }
+
+  drawBaseUi() {
+    // hide all UI elements
+    const screens = [
+      this.#startScreenElemId,
+      this.#chooseNameScreenElemId,
+      this.#chooseServerScreenElemId,
+      this.#hostScreenElemId,
+      this.#playScreenElemId
+    ];
+    screens.forEach((screen) => {
+      document.getElementById(screen).style.display = "none";
+    });
+    // show the UI element for the given state
+    switch (this.uiState) {
+      case "start":
+        document.getElementById(this.#startScreenElemId).style.display = "block";
+        break;
+      case "chooseName":
+        document.getElementById(this.#chooseNameScreenElemId).style.display = "block";
+        break;
+      case "chooseServer":
+        document.getElementById(this.#chooseServerScreenElemId).style.display = "block";
+        break;
+      case "play":
+        document.getElementById(this.#playScreenElemId).style.display = "block";
+        break;
+      case "host":
+        document.getElementById(this.#hostScreenElemId).style.display = "block";
+        break;
+    }
+  }
+
+  setUiEventListeners() {
+    document.getElementById(this.#initHostButtonElemId).addEventListener('click', () => {
+      this.setUiState("host");
+    });
+    document.getElementById(this.#initPlayButtonElemId).addEventListener('click', () => {
+      this.setUiState("chooseName");
+    });
+    document.getElementById(this.#chooseNameButtonElemId).addEventListener('click', () => {
+      this.setUiState("chooseServer");
+    });
+    document.getElementById(this.#chooseServerButtonElemId).addEventListener('click', () => {
+      this.setUiState("play");
+    });
+  }
+
   renderServerSide() {
     // set the server ID
     document.getElementById(this.#serverIdInputElemId).value = this.serverID;
     // initialize server ID copy button
     document.getElementById(this.#serverIdCopyElemId).addEventListener("click", () => {
       navigator.clipboard.writeText(this.serverID);
-    }
+    });
 
     // set the server password
     document.getElementById(this.#serverPwInputElemId).value = this.serverPW;
@@ -144,7 +217,7 @@ class Game {
       document.getElementById(this.#serverPwSetElemId).disabled = true;
       // make the input field read-only
       document.getElementById(this.#serverPwInputElemId).readOnly = true;
-    }
+    });
 
     // draw the player list
     let playerListElem = document.getElementById(this.#playerListElemId);
@@ -157,7 +230,7 @@ class Game {
       row.insertCell().innerHTML = player.name;
       row.insertCell().innerHTML = player.id;
       row.insertCell().innerHTML = player.score;
-    }
+    });
   }
 
   renderPlayerSide(myPlayerName) {
@@ -171,7 +244,7 @@ class Game {
     answerTableHeadRowElem.insertCell().innerHTML = "Letter";
     this.columns.forEach((column) => {
       answerTableHeadRowElem.insertCell().innerHTML = column;
-    }
+    });
     // table body
     let answerTableBodyElem = answerTableElem.createTBody();
     this.rounds.forEach((round) => {
@@ -196,17 +269,16 @@ class Game {
           answerOrderDotElem.innerHTML = "●";
           answerOrderDotElem.style.color = answer.player.color;
           answerOrderElem.appendChild(answerOrderDotElem);
-        }
+        });
         answerTableBodyCellElem.appendChild(answerOrderElem);
-      }
-    }
+      });
+    });
 
     // draw the input table
     let inputTableElem = document.getElementById(this.#gameInputTableElemId);
     // clear
     inputTableElem.innerHTML = "";
-    // add a single table row with input elements which, when the player hits enter, add the answer to the current round
-    // and disable the input element for that specific column
+    // add input elements
     let inputTableBodyElem = inputTableElem.createTBody();
     let inputTableBodyRowElem = inputTableBodyElem.insertRow();
     this.columns.forEach((column) => {
@@ -220,9 +292,18 @@ class Game {
           // disable the input element
           inputElem.disabled = true;
         }
-      }
+      });
       inputTableBodyCellElem.appendChild(inputElem);
-    }
+      // add indicator for other players that already answered
+      let inputTableBodyCellDivElem = document.createElement("div");
+      inputTableBodyCellElem.appendChild(inputTableBodyCellDivElem);
+      this.getCurrentRound().answers.filter((answer) => answer.column == column).forEach((answer) => {
+        let inputTableBodyCellDivDotElem = document.createElement("span");
+        inputTableBodyCellDivDotElem.innerHTML = "●";
+        inputTableBodyCellDivDotElem.style.color = answer.player.color;
+        inputTableBodyCellDivElem.appendChild(inputTableBodyCellDivDotElem);
+      });
+    });
 
     // draw the peer list
     let peerListElem = document.getElementById(this.#peerListElemId);
@@ -239,6 +320,6 @@ class Game {
       peerNameElem.innerHTML = player.name;
       peerElem.appendChild(peerNameElem);
       peerListElem.appendChild(peerElem);
-    }
+    });
   }
 }

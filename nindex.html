@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SLF</title>
+    <link rel="stylesheet" href="css/bulma.min.css">
+    <script src="js/slf.js"></script>
+  </head>
+  <body>
+
+  <nav class="navbar is-light" role="navigation" aria-label="main navigation">
+    <div class="container">
+      <div class="navbar-brand">
+        <a class="navbar-item href="index.html"">
+          <p><strong>[ SLF ]</strong></p>
+        </a>
+
+        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+        </a>
+      </div>
+
+      <div id="navbarBasicExample" class="navbar-menu">
+        <div class="navbar-start">
+          <a class="navbar-item">Home</a>
+          <a class="navbar-item">Documentation</a>
+
+          <div class="navbar-item has-dropdown is-hoverable">
+            <a class="navbar-link">More</a>
+
+            <div class="navbar-dropdown">
+              <a class="navbar-item">About</a>
+              <a class="navbar-item">Jobs</a>
+              <a class="navbar-item">Contact</a>
+              <hr class="navbar-divider">
+              <a class="navbar-item">Report an issue</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="navbar-end">
+          <div class="navbar-item">
+            <a><strong>GitHub</strong></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- # # # # # # # # Start Screen # # # # # # # # # # # # -->
+    <section id="startScreen" class="section mt-6">
+      <div class="buttons is-centered" style="width: 100%">
+          <a class="button is-large is-success" id="initPlayButton">Play</a>
+          <a class="button is-large is-light" id="initHostButton">Host</a>
+      </div>
+    </section>
+  <!-- / # # # # # # # # # # # # # # # # # # # # # # # # # # -->
+
+  <!-- # # # # # # # # Server Screen # # # # # # # # # # # # -->
+    <section id="serverScreen" class="section" style="display: none;">
+      <div class="container">
+        <div class="columns">
+          <div class="column is-4">
+            <div class="field">
+              <h2 class="subtitle">Server ID</h2>
+            </div>
+            <div class="field has-addons">
+              <input class="input" type="text" id="serverId" readonly placeholder="(set game columns first)">
+              <a class="button is-success" id="copyServerId">Copy</a>
+            </div>
+            <div class="field">
+              <h2 class="subtitle">Password</h2>
+            </div>
+            <div class="field has-addons">
+              <input class="input" type="text" id="serverPw" placeholder="Set a password">
+              <a class="button is-light" id="serverPwSet">Set</a>
+            </div>
+            <div class="field">
+              <h2 class="subtitle">Game columns</h2>
+            </div>
+            <div class="field">
+              <textarea class="textarea" id="gameColumns" placeholder="Stadt, Land, Fluss, ..."></textarea>
+              <a class="button is-warning" id="gameColumnsSet">Set Columns</a>
+            </div>
+          </div>
+          <div class="column is-offset-1">
+            <div class="field">
+              <h2 class="subtitle">Players</h2>
+            </div>
+            <div class="table-container">
+              <table class="table is-fullwidth" id="playerList">
+                <thead>
+                  <tr>
+                    <th><abbr title="Color">Color</abbr></th>
+                    <th><abbr title="Name">Name</abbr></th>
+                    <th><abbr title="ID">ID</abbr></th>
+                    <th><abbr title="Points">Points</abbr></th>
+                  </tr>
+                </thead>
+                <tbody>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  <!-- / # # # # # # # # # # # # # # # # # # # # # # # # # # -->
+
+  <!-- # # # # # # # # Choose Name Screen # # # # # # # # # -->
+    <section id="chooseNameScreen" class="section mt-6" style="display: none;">
+      <form>
+      <div class="buttons is-centered mb-0" style="width: 100%">
+        <div class="field has-addons">
+          <input class="input" type="color" id="playerColorInput" name="playerColor" value="#000" style="width: 4em;">
+          <input class="input is-focused" type="text" id="playerNameInput" name="playerName" placeholder="Player name" required>
+          <input class="button is-success" type="submit" value="Choose Server" id="chooseNameButton">
+        </div>
+      </form>
+      </div>
+    </section>
+  <!-- / # # # # # # # # # # # # # # # # # # # # # # # # # # -->
+
+  <!-- # # # # # # # # Choose Server Screen # # # # # # # # -->
+    <section id="chooseServerScreen" class="section mt-6" style="display: none;">
+      <div class="buttons is-centered mb-0" style="width: 100%">
+      <form>
+        <div class="field has-addons">
+          <input class="input is-focused" type="text" id="serverIdInput" name="serverIdPlayer" placeholder="Paste server ID" required>
+          <input class="button is-success" type="submit" value="Join" id="chooseServerButton">
+        </div>
+      </div>
+      <div class="buttons is-centered" style="width: 100%">
+        <div class="field has-addons">
+          <input class="input" type="text" id="serverPwPlayerInput" name="serverPw" placeholder="Password" value="">
+          <a class="button is-invisible">Join</a>
+        </div>
+      </form>
+      </div>
+    </section>
+  <!-- / # # # # # # # # # # # # # # # # # # # # # # # # # # -->
+
+  <!-- # # # # # # # # Play Screen # # # # # # # # # # # # # -->
+    <section id="playScreen" class="section" style="display: none;">
+      <div class="table-container">
+        <table class="table is-fullwidth is-striped" id="gameAnswerTable">
+          <thead>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-container">
+        <table class="table is-fullwidth" id="gameInputTable">
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <hr class="hr">
+      <div class="level" id="playerList">
+      </div>
+    </section>
+  <!-- / # # # # # # # # # # # # # # # # # # # # # # # # # # -->
+
+  <script>
+
+  game = new Game();
+
+  /* - - - mobile burger menu toggle - - - */
+  document.addEventListener('DOMContentLoaded', () => {
+    // Get all "navbar-burger" elements
+    const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+    // Add a click event on each of them
+    $navbarBurgers.forEach( el => {
+      el.addEventListener('click', () => {
+        // Get the target from the "data-target" attribute
+        const target = el.dataset.target;
+        const $target = document.getElementById(target);
+        // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
+        el.classList.toggle('is-active');
+        $target.classList.toggle('is-active');
+      });
+    });
+  });
+  /* /- - - mobile burger menu toggle - - - */
+  </script>
+
+  </body>
+</html>
