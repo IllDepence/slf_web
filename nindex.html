@@ -112,12 +112,12 @@
 
   <!-- # # # # # # # # Choose Name Screen # # # # # # # # # -->
     <section id="chooseNameScreen" class="section mt-6" style="display: none;">
-      <form>
+      <form id="chooseNameForm">
       <div class="buttons is-centered mb-0" style="width: 100%">
         <div class="field has-addons">
           <input class="input" type="color" id="playerColorInput" name="playerColor" value="#000" style="width: 4em;">
           <input class="input is-focused" type="text" id="playerNameInput" name="playerName" placeholder="Player name" required>
-          <input class="button is-success" type="submit" value="Choose Server" id="chooseNameButton">
+          <input class="button is-success" type="submit" value="Choose Server">
         </div>
       </form>
       </div>
@@ -127,10 +127,10 @@
   <!-- # # # # # # # # Choose Server Screen # # # # # # # # -->
     <section id="chooseServerScreen" class="section mt-6" style="display: none;">
       <div class="buttons is-centered mb-0" style="width: 100%">
-      <form>
+      <form id="chooseServerForm">
         <div class="field has-addons">
-          <input class="input is-focused" type="text" id="serverIdInput" name="serverIdPlayer" placeholder="Paste server ID" required>
-          <input class="button is-success" type="submit" value="Join" id="chooseServerButton">
+          <input class="input is-focused" type="text" id="serverIdPlayerInput" name="serverIdPlayer" placeholder="Paste server ID" required>
+          <input class="button is-success" type="submit" value="Join">
         </div>
       </div>
       <div class="buttons is-centered" style="width: 100%">
@@ -170,7 +170,7 @@
 
   <script>
 
-  game = new Game();
+  const game = new Game();
 
   /* - - - mobile burger menu toggle - - - */
   document.addEventListener('DOMContentLoaded', () => {

@@ -7,7 +7,7 @@
 
 class Player {
 
-  constructor(id, name, color, score = 0) {
+  constructor(name, color, id = null, score = 0) {
     this.id = id; // peerJS ID
     this.name = name;
     this.color = color;
@@ -62,12 +62,12 @@ class Game {
   #initHostButtonElemId = "initHostButton";
   // choose name view element IDs
   #chooseNameScreenElemId = "chooseNameScreen";
-  #chooseNameButtonElemId = "chooseNameButton";
+  #chooseNameFormElemId = "chooseNameForm";
   #playerColorInputElemId = "playerColorInput";
   #playerNameInputElemId = "playerNameInput";
   // choose server view element IDs
   #chooseServerScreenElemId = "chooseServerScreen";
-  #chooseServerButtonElemId = "chooseServerButton";
+  #chooseServerFormElemId = "chooseServerForm";
   #serverIdPlayerInputElemId = "serverIdPlayerInput";
   #serverPwPlayerInputElemId = "serverPwPlayerInput";
   // server view element IDs
@@ -85,11 +85,13 @@ class Game {
   #gameInputTableElemId = "gameInputTable";
   #peerListElemId = "peerList";
 
-  constructor(columns = [], players = [], rounds = [], serverID = null) {
+  constructor(columns = [], players = [], rounds = [], player = null, serverID = null) {
     this.columns = columns;
     this.players = players;
     this.rounds = rounds;
+    this.player = player;
     this.serverID = serverID;
+    // setup UI
     this.uiState = "start";
     document.addEventListener('DOMContentLoaded', () => {
       this.setUiEventListeners();
@@ -191,10 +193,19 @@ class Game {
     document.getElementById(this.#initPlayButtonElemId).addEventListener('click', () => {
       this.setUiState("chooseName");
     });
-    document.getElementById(this.#chooseNameButtonElemId).addEventListener('click', () => {
+    document.getElementById(this.#chooseNameFormElemId).addEventListener('submit', (e) => {
+      e.preventDefault();
+      // set the player name and color
+      let playerName = document.getElementById(this.#playerNameInputElemId).value;
+      let playerColor = document.getElementById(this.#playerColorInputElemId).value;
+      this.player = new Player(playerName, playerColor);
       this.setUiState("chooseServer");
     });
-    document.getElementById(this.#chooseServerButtonElemId).addEventListener('click', () => {
+    document.getElementById(this.#chooseServerFormElemId).addEventListener('submit', (e) => {
+      e.preventDefault();
+      // set the server ID and password
+      this.serverID = document.getElementById(this.#serverIdPlayerInputElemId).value;
+      this.serverPW = document.getElementById(this.#serverPwPlayerInputElemId).value;
       this.setUiState("play");
     });
   }
