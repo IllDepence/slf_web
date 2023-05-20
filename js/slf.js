@@ -85,12 +85,13 @@ class Game {
   #gameInputTableElemId = "gameInputTable";
   #peerListElemId = "peerList";
 
-  constructor(columns = [], players = [], rounds = [], player = null, serverID = null) {
+  constructor(columns = [], players = [], rounds = [], player = null, serverId = null , serverPw = null) {
     this.columns = columns;
     this.players = players;
     this.rounds = rounds;
     this.player = player;
-    this.serverID = serverID;
+    this.serverId = serverId;
+    this.serverPw = serverPw;
     // setup UI
     this.uiState = "start";
     document.addEventListener('DOMContentLoaded', () => {
@@ -152,6 +153,7 @@ class Game {
   setUiState(state) {
     this.uiState = state;
     this.drawBaseUi();
+    this.drawGameUi();
   }
 
   drawBaseUi() {
@@ -201,34 +203,45 @@ class Game {
       this.player = new Player(playerName, playerColor);
       this.setUiState("chooseServer");
     });
-    document.getElementById(this.#chooseServerFormElemId).addEventListener('submit', (e) => {
-      e.preventDefault();
-      // set the server ID and password
-      this.serverID = document.getElementById(this.#serverIdPlayerInputElemId).value;
-      this.serverPW = document.getElementById(this.#serverPwPlayerInputElemId).value;
-      this.setUiState("play");
-    });
   }
 
-  renderServerSide() {
+  drawGameUi() {
+    if (this.uiState == "play") {
+      this.drawPlayUi(this.player);
+    }
+    else if (this.uiState == "host") {
+      this.drawServerUi();
+    }
+  }
+
+  deactiveServerPwInputs() {
+    // deactivate the button
+    document.getElementById(this.#serverPwSetElemId).disabled = true;
+    // make the input field read-only
+    document.getElementById(this.#serverPwInputElemId).readOnly = true;
+  }
+
+  drawServerUi() {
     // set the server ID
-    document.getElementById(this.#serverIdInputElemId).value = this.serverID;
+    document.getElementById(this.#serverIdInputElemId).value = this.serverId;
     // initialize server ID copy button
     document.getElementById(this.#serverIdCopyElemId).addEventListener("click", () => {
-      navigator.clipboard.writeText(this.serverID);
+      navigator.clipboard.writeText(this.serverId);
     });
 
-    // set the server password
-    document.getElementById(this.#serverPwInputElemId).value = this.serverPW;
-    // initialize server password set button
-    document.getElementById(this.#serverPwSetElemId).addEventListener("click", () => {
-      // set the server password
-      this.serverPW = document.getElementById(this.#serverPwInputElemId).value;
-      // deactivate the button
-      document.getElementById(this.#serverPwSetElemId).disabled = true;
-      // make the input field read-only
-      document.getElementById(this.#serverPwInputElemId).readOnly = true;
-    });
+    // show server PW if already set (i.e. when redrawing the UI)
+    if (this.serverPw != null) {
+      document.getElementById(this.#serverPwInputElemId).value = this.serverPw;
+      this.deactiveServerPwInputs();
+    }
+    else{ 
+      // initialize server password set button
+      document.getElementById(this.#serverPwSetElemId).addEventListener("click", () => {
+        // set the server password
+        this.serverPw = document.getElementById(this.#serverPwInputElemId).value;
+        this.deactiveServerPwInputs();
+      });
+    }
 
     // draw the player list
     let playerListElem = document.getElementById(this.#playerListElemId);
@@ -244,7 +257,7 @@ class Game {
     });
   }
 
-  renderPlayerSide(myPlayerName) {
+  drawPlayUi(myPlayerName) {
     // draw the answer table
     let answerTableElem = document.getElementById(this.#gameAnswerTableElemId);
     // clear
