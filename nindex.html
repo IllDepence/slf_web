@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SLF</title>
     <link rel="stylesheet" href="css/bulma.min.css">
+    <style>
+      #pointInputTable td {
+        border: none;
+      }
+    </style>
     <script src="https://unpkg.com/peerjs@1.3.2/dist/peerjs.min.js"></script>
     <script src="js/slf.js"></script>
   </head>
@@ -156,6 +161,12 @@
       </div>
       <div class="table-container">
         <table class="table is-fullwidth" id="gameInputTable">
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-container">
+        <table class="table is-fullwidth" id="pointInputTable" style="display: none;">
           <tbody>
           </tbody>
         </table>

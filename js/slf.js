@@ -83,6 +83,7 @@ class Game {
   #playScreenElemId = "playScreen";
   #gameAnswerTableElemId = "gameAnswerTable";
   #gameInputTableElemId = "gameInputTable";
+  #pointInputTableElemId = "pointInputTable";
   #peerListElemId = "peerList";
 
   constructor(
@@ -151,11 +152,22 @@ class Game {
     this.getCurrentRound().end();
   }
 
+  answeredAll() {
+    // check if we have answered all columns
+    return this.getCurrentRound().answers.filter(
+      (answer) => answer.player.id === this.player.id
+    ).length === this.columns.length;
+  }
+
   addAnswer(player, column, answer) {
     // add answer to current round in local game state
     this.getCurrentRound().addAnswer(player, column, answer);
     // send single answer dot to server
     this.sendSingleAnswerDotToServer(player, column);
+    // if the player gave an answer for every column, draw the point input table
+    if (this.answeredAll()) {
+      this.drawPointInputTable();
+    }
   }
 
   sumScore(rounds) {
@@ -580,6 +592,57 @@ class Game {
     return str.replace(/[^a-zA-Z0-9]/g, "");
   }
 
+  submitPointInput() {
+    // get currently input points
+    let points = 0;
+    this.columns.forEach((column) => {
+      let inputElem = document.getElementById(this.idSafe(`points_${column}`));
+      points += parseInt(inputElem.value);
+    });
+    // add points to player
+    this.player.score += points;
+    // hide the point input table
+    let pointInputTableElem = document.getElementById(this.#pointInputTableElemId);
+    pointInputTableElem.style.display = "none";
+    // end the current round
+    this.endRound();
+    this.drawGameUi();
+  }
+
+  drawPointInputTable() {
+    // make visible
+    let pointInputTableElem = document.getElementById(this.#pointInputTableElemId);
+    pointInputTableElem.style.display = "";
+    // clear
+    pointInputTableElem.innerHTML = "";
+    let tableBodyElem = pointInputTableElem.createTBody();
+    // row with input fields
+    let rowElem = tableBodyElem.insertRow();
+    this.columns.forEach((column) => {
+      let cellElem = rowElem.insertCell();
+      let inputElem = document.createElement("input");
+      inputElem.type = "text";
+      inputElem.classList.add("input");
+      inputElem.id = this.idSafe(`points_${column}`);
+      cellElem.appendChild(inputElem);
+    });
+    // row with submit button
+    rowElem = tableBodyElem.insertRow();
+    let cellElem = rowElem.insertCell();
+    cellElem.colSpan = this.columns.length;
+    let submitButtonElem = document.createElement("button");
+    submitButtonElem.classList.add("button");
+    submitButtonElem.classList.add("input");
+    submitButtonElem.classList.add("is-light");
+    submitButtonElem.classList.add("is-success");
+    submitButtonElem.textContent = "submit";
+    cellElem.appendChild(submitButtonElem);
+    // set event listener on submit button
+    submitButtonElem.addEventListener("click", () => {
+      this.submitPointInput();
+    });
+  }
+
   drawPlayUi(myPlayerName) {
     // draw the answer table
     let answerTableElem = document.getElementById(this.#gameAnswerTableElemId);
@@ -610,27 +673,28 @@ class Game {
         }
         answerTableBodyCellElem.appendChild(myAnswerElem);
         // add indicator for order of answers from all players to cell
-        let answerOrderElem = document.createElement("p");
+        let answerOrderElem = document.createElement("span");
+        answerOrderElem.innerHTML = "&nbsp;"; // separator
         roundAnswers.forEach((answer) => {
           let answerOrderDotElem = document.createElement("span");
           answerOrderElem.appendChild(this.playerDotElement(answer.player));
         });
-        answerTableBodyCellElem.appendChild(answerOrderElem);
+        myAnswerElem.appendChild(answerOrderElem);
       });
     });
 
     // draw the input table
     let inputTableElem = document.getElementById(this.#gameInputTableElemId);
-    // remember current input values and (dis)abled state of all columns
-    let currentInputValues = {};
-    let currentInputDisabled = {};
-    this.columns.forEach((column) => {
-      let inputElem = document.getElementById(this.#gameInputTableElemId + "-" + this.idSafe(column));
-      if (inputElem) {
-        currentInputValues[column] = inputElem.value;
-        currentInputDisabled[column] = inputElem.disabled;
-      }
-    });
+    // // remember current input values and (dis)abled state of all columns
+    // let currentInputValues = {};
+    // let currentInputDisabled = {};
+    // this.columns.forEach((column) => {
+    //   let inputElem = document.getElementById(this.#gameInputTableElemId + "-" + this.idSafe(column));
+    //   if (inputElem) {
+    //     currentInputValues[column] = inputElem.value;
+    //     currentInputDisabled[column] = inputElem.disabled;
+    //   }
+    // });
     // clear
     inputTableElem.innerHTML = "";
     // add input elements
@@ -650,26 +714,26 @@ class Game {
           inputElem.disabled = true;
         }
       });
-      // set previous input value and (dis)abled state if exists
-      let previousInputValue = currentInputValues[column];
-      if (previousInputValue) {
-        inputElem.value = previousInputValue;
-      }
-      if (currentInputDisabled[column]) {
-        inputElem.disabled = currentInputDisabled[column];
-      }
+      // // set previous input value and (dis)abled state if exists
+      // let previousInputValue = currentInputValues[column];
+      // if (previousInputValue) {
+      //   inputElem.value = previousInputValue;
+      // }
+      // if (currentInputDisabled[column]) {
+      //   inputElem.disabled = currentInputDisabled[column];
+      // }
       inputTableBodyCellElem.appendChild(inputElem);
-      // add indicator for other players that already answered
+      // add dif for indicators of other players that already answered
       let inputTableDotsElem = document.createElement("div");
       inputTableDotsElem.id = this.#gameInputTableElemId + "-" + this.idSafe(column) + "-dots";
       inputTableBodyCellElem.appendChild(inputTableDotsElem);
-      let currentRound = this.getCurrentRound();
-      // if there is a current round
-      if (currentRound) {
-        currentRound.answers.filter((answer) => answer.column == column).forEach((answer) => {
-          inputTableDotsElem.appendChild(this.playerDotElement(answer.player));
-        });
-      }
+      // let currentRound = this.getCurrentRound();
+      // // if there is a current round
+      // if (currentRound) {
+      //   currentRound.answers.filter((answer) => answer.column == column).forEach((answer) => {
+      //     inputTableDotsElem.appendChild(this.playerDotElement(answer.player));
+      //   });
+      // }
     });
 
     // draw the peer list
