@@ -119,6 +119,7 @@ class Game {
   }
 
   addPlayer(player) {
+    console.log("adding player", player);
     this.players.push(player);
   }
 
@@ -229,31 +230,74 @@ class Game {
     console.log('creating peerJS object');
     const peer = new Peer();
     peer.on('open', id => {
+      // set own peerJsObj
       this.peerJsObj = peer;
+      // if in play mode, add peerJS ID to player object
+      if (this.uiState == "play") {
+        this.player.id = id;
+      }
       console.log(`acquired peer ID: ${id}`);
       callbackFunction();
     });
   }
 
-  ensureServerConnection(callbackFunction) {
-    console.log('connecting to server');
-    this.serverConn = this.peerJsObj.connect(this.serverId, {
-      metadata: {
-        serverPw: this.serverPw,
-        player: this.player
-      }
-    });
-    // Set handler for receiving messages
-    this.serverConn.on('data', data => {
-      this.handleData(data);
-    });
-    this.serverConn.on('open', () => {
-      // suucessfully connected to server
+  ensureClientServerConnection(callbackFunction) {
+    // in play mode, connect to the server
+    if (this.uiState == "play") {
+      console.log('connecting to server');
+      this.serverConn = this.peerJsObj.connect(this.serverId, {
+        metadata: {
+          serverPw: this.serverPw,
+          player: this.player
+        }
+      });
+      // Set handler for receiving messages in a way that
+      // ensures that the game object is the "this" object
+      this.serverConn.on('data', data => {
+        this.handleData(data);
+      });
+      this.serverConn.on('open', () => {
+        // suucessfully connected to server
+        callbackFunction();
+      });
+    }
+    // in host mode set handler for receiving new client connections
+    else if (this.uiState == "host") {
+      console.log('setting up callbacks for incoming connections');
+      this.peerJsObj.on('connection', conn => {
+        this.handleIncomingPlayerConnection(conn);
+        conn.on('data', data => {
+          this.handleData(data);
+        });
+      });
+      // done
+      this.serverConn = true; // fake connection because we are the server
       callbackFunction();
-    });
+    }
+  }
+
+  handleIncomingPlayerConnection(conn) {
+    // check if the player is already known
+    if (this.isPlayerKnown(conn.metadata.player)) {
+      console.log(`player ${conn.metadata.player.name} is already known`);
+      return;
+    }
+    // check the password if one is set
+    if (this.serverPw != null && this.serverPw != conn.metadata.serverPw) {
+      console.log(`wrong password for player ${conn.metadata.player.name}`);
+      return;
+    }
+    console.log(`adding player ${conn.metadata.player.name}`);
+    this.addPlayer(conn.metadata.player);
+  }
+
+  isPlayerKnown(player) {
+    // check if a player is already in the list of players
+    return this.players.some((p) => p.name == player.name && p.id == player.id);
   }
 
   handleData(data) {
+    console.log(`received data: ${data}`);
   }
 
   drawGameUi() {
@@ -271,20 +315,20 @@ class Game {
       });
       return;
     }
+    // ensure client/server connection
+    if (this.serverConn == null) {
+      console.log('setting up client/server connection');
+      // call ensureClientServerConnection with drawGameUi as callback
+      this.ensureClientServerConnection(() => {
+        this.drawGameUi();
+      });
+    }
     // draw the UI
     if (this.uiState == "host") {
       console.log('drawing host UI');
       this.drawServerUi();
     }
     else if (this.uiState == "play") {
-      // ensure server connection
-      if (this.serverConn == null) {
-        console.log('setting up server connection');
-        // call ensureServerConnection with drawGameUi as callback
-        this.ensureServerConnection(() => {
-          this.drawGameUi();
-        });
-      }
       console.log('drawing play UI');
       this.drawPlayUi(this.player);
     }
