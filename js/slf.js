@@ -96,12 +96,12 @@ class Game {
     peerJsObj = null,
   ) {
     this.columns = columns;
-    this.players = players;  // server side
-    this.player = player;  // player side
+    this.players = players;
+    this.player = player;  // player side only
     this.rounds = rounds;
     this.serverId = serverId;
     this.serverPw = serverPw;
-    this.serverConn = serverConn;  // player side
+    this.serverConn = serverConn;  // player side only
     this.peerJsObj = peerJsObj;
     // setup UI
     this.uiState = "start";
@@ -111,11 +111,13 @@ class Game {
     });
   }
 
-  updateState(columns, players, rounds) {
+  updateGameState(state) {
     // complete update of the game state
-    this.columns = columns;
-    this.players = players;
-    this.rounds = rounds;
+    this.columns = state.columns;
+    this.players = state.players;
+    this.rounds = state.rounds;
+    // update UI accordingly
+    this.drawGameUi();
   }
 
   addPlayer(player) {
@@ -125,7 +127,7 @@ class Game {
 
   getCurrentRound() {
     // return the current round
-    return this._rounds[this._rounds.length - 1];
+    return this.rounds[this.rounds.length - 1];
   }
 
   startRound(letter) {
@@ -258,6 +260,7 @@ class Game {
       });
       this.serverConn.on('open', () => {
         // suucessfully connected to server
+        // TODO: check if server accepted the password
         callbackFunction();
       });
     }
@@ -289,6 +292,50 @@ class Game {
     }
     console.log(`adding player ${conn.metadata.player.name}`);
     this.addPlayer(conn.metadata.player);
+    // send updated game state to all players after a short delay
+    setTimeout(() => {
+      this.sendGameStateToPlayers();
+    } , 1000);
+  }
+
+  updateGameStateMessage() {
+    return {
+      type: "updateGameState",
+      payload: {
+        columns: this.columns,
+        players: this.players,
+        rounds: this.rounds
+      }
+    };
+  }
+
+  getPlayerByPeerId(peerId) {
+    // get the player object corresponding to a peerJS ID
+    return this.players.find((p) => p.id == peerId);
+  }
+
+  sendGameStateToPlayers() {
+    // assert that we are in host mode
+    if (this.uiState != "host") {
+      console.log('not in host mode, not sending game state to players');
+      return;
+    }
+    // send the game state to all players
+    let connections = this.peerJsObj.connections;
+    // for all connections, check if they correspond to a player
+    // and if so, send the game state to them
+    for (let connId in connections) {
+      let conns = connections[connId] // list (empty if no connection)
+      if (conns.length == 0) {
+        continue;
+      }
+      let conn = conns[0]; // Note: can there be multiple connections per peer?
+      let player = this.getPlayerByPeerId(connId);
+      if (player != null) {
+        console.log(`sending game state to player ${player.name}`);
+        conn.send(this.updateGameStateMessage());
+      }
+    }
   }
 
   isPlayerKnown(player) {
@@ -297,7 +344,17 @@ class Game {
   }
 
   handleData(data) {
-    console.log(`received data: ${data}`);
+    // check if data has a type and payload field
+    if (!("type" in data) || !("payload" in data)) {
+      console.log('received data without type or payload field');
+      console.log(data);
+      return;
+    }
+    let messageType = data.type;
+    // update game state message
+    if (messageType == "updateGameState") {
+      this.updateGameState(data.payload);
+    }
   }
 
   drawGameUi() {
@@ -488,12 +545,16 @@ class Game {
       // add indicator for other players that already answered
       let inputTableBodyCellDivElem = document.createElement("div");
       inputTableBodyCellElem.appendChild(inputTableBodyCellDivElem);
-      this.getCurrentRound().answers.filter((answer) => answer.column == column).forEach((answer) => {
-        let inputTableBodyCellDivDotElem = document.createElement("span");
-        inputTableBodyCellDivDotElem.innerHTML = "●";
-        inputTableBodyCellDivDotElem.style.color = answer.player.color;
-        inputTableBodyCellDivElem.appendChild(inputTableBodyCellDivDotElem);
-      });
+      let currentRound = this.getCurrentRound();
+      // if there is a current round
+      if (currentRound) {
+        currentRound.answers.filter((answer) => answer.column == column).forEach((answer) => {
+          let inputTableBodyCellDivDotElem = document.createElement("span");
+          inputTableBodyCellDivDotElem.innerHTML = "●";
+          inputTableBodyCellDivDotElem.style.color = answer.player.color;
+          inputTableBodyCellDivElem.appendChild(inputTableBodyCellDivDotElem);
+        });
+      }
     });
 
     // draw the peer list
@@ -503,6 +564,8 @@ class Game {
     // fill
     this.players.forEach((player) => {
       let peerElem = document.createElement("p");
+      peerElem.classList.add('level-item');
+      peerElem.classList.add('has-text-centered');
       let peerDotElem = document.createElement("span");
       peerDotElem.innerHTML = "●&nbsp;";
       peerDotElem.style.color = player.color;
