@@ -173,6 +173,13 @@
 
   const game = new Game();
 
+  /* - - - prevent user from accidentally leaving or refreshing the page - - - */
+  window.addEventListener('beforeunload', function (e) {
+    e.preventDefault();
+    e.returnValue = '';
+  });
+  /* /- - - prevent user from accidentally leaving or refreshing the page - - - */
+
   /* - - - mobile burger menu toggle - - - */
   document.addEventListener('DOMContentLoaded', () => {
     // Get all "navbar-burger" elements
