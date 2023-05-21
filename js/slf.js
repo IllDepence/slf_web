@@ -18,8 +18,8 @@ class Player {
 
 class Answer {
 
-  constructor(player_name, column, answer, score = null) {
-    this.player_name = player_name;
+  constructor(playerName, column, answer, score = null) {
+    this.playerName = playerName;
     this.column = column;
     this.answer = answer;
     this.score = score;
@@ -49,7 +49,7 @@ class Round {
   }
 
   addAnswer(player, column, answer) {
-    this.answers.push(new Answer(player_name, column, answer));
+    this.answers.push(new Answer(playerName, column, answer));
   }
 
 }
@@ -85,13 +85,23 @@ class Game {
   #gameInputTableElemId = "gameInputTable";
   #peerListElemId = "peerList";
 
-  constructor(columns = [], players = [], rounds = [], player = null, serverId = null, serverPw = null, peerJsObj = null) {
+  constructor(
+    columns = [],
+    players = [],  // server side
+    player = null,  // player side
+    rounds = [],
+    serverId = null,
+    serverPw = null,
+    serverConn = null,  // player side
+    peerJsObj = null,
+  ) {
     this.columns = columns;
-    this.players = players;
+    this.players = players;  // server side
+    this.player = player;  // player side
     this.rounds = rounds;
-    this.player = player;
     this.serverId = serverId;
     this.serverPw = serverPw;
+    this.serverConn = serverConn;  // player side
     this.peerJsObj = peerJsObj;
     // setup UI
     this.uiState = "start";
@@ -204,29 +214,79 @@ class Game {
       this.player = new Player(playerName, playerColor);
       this.setUiState("chooseServer");
     });
+    document.getElementById(this.#chooseServerFormElemId).addEventListener('submit', (e) => {
+      e.preventDefault();
+      // set the server ID and password
+      let serverId = document.getElementById(this.#serverIdPlayerInputElemId).value;
+      let serverPw = document.getElementById(this.#serverPwPlayerInputElemId).value;
+      this.serverId = serverId;
+      this.serverPw = serverPw;
+      this.setUiState("play");
+    });
+  }
+
+  ensurePeerJsId(callbackFunction) {
+    console.log('creating peerJS object');
+    const peer = new Peer();
+    peer.on('open', id => {
+      this.peerJsObj = peer;
+      console.log(`acquired peer ID: ${id}`);
+      callbackFunction();
+    });
+  }
+
+  ensureServerConnection(callbackFunction) {
+    console.log('connecting to server');
+    this.serverConn = this.peerJsObj.connect(this.serverId, {
+      metadata: {
+        serverPw: this.serverPw,
+        player: this.player
+      }
+    });
+    // Set handler for receiving messages
+    this.serverConn.on('data', data => {
+      this.handleData(data);
+    });
+    this.serverConn.on('open', () => {
+      // suucessfully connected to server
+      callbackFunction();
+    });
+  }
+
+  handleData(data) {
   }
 
   drawGameUi() {
-    // draws game UI in playing or hosting state
-    // *also* ensures that we have peerJS set up
-
-    // if we're either playing or hosting and the peerJsObj is not yet initialized
-    if ((this.uiState == "play" || this.uiState == "host") && this.peerJsObj == null) {
-      // setup peerJsObj and call this function again
-      const peer = new Peer();
-      // Get an ID for peer discovery
-      peer.on('open', id => {
-        this.peerJsObj = peer;
+    // if we're not in play or host mode, don't draw anything
+    if (!(this.uiState == "play" || this.uiState == "host")) {
+      console.log('not in play or host mode, not drawing game UI');
+      return;
+    }
+    // ensure peerJS connection
+    if (this.peerJsObj == null) {
+      console.log('setting up peerJS connection');
+      // call ensurePeerJsId with drawGameUi as callback
+      this.ensurePeerJsId(() => {
         this.drawGameUi();
       });
+      return;
     }
-    else {
-      if (this.uiState == "play") {
-        this.drawPlayUi(this.player);
+    // draw the UI
+    if (this.uiState == "host") {
+      console.log('drawing host UI');
+      this.drawServerUi();
+    }
+    else if (this.uiState == "play") {
+      // ensure server connection
+      if (this.serverConn == null) {
+        console.log('setting up server connection');
+        // call ensureServerConnection with drawGameUi as callback
+        this.ensureServerConnection(() => {
+          this.drawGameUi();
+        });
       }
-      else if (this.uiState == "host") {
-        this.drawServerUi();
-      }
+      console.log('drawing play UI');
+      this.drawPlayUi(this.player);
     }
   }
 
@@ -329,7 +389,6 @@ class Game {
     // table head
     let answerTableHeadElem = answerTableElem.createTHead();
     let answerTableHeadRowElem = answerTableHeadElem.insertRow();
-    answerTableHeadRowElem.insertCell().innerHTML = "Letter";
     this.columns.forEach((column) => {
       answerTableHeadRowElem.insertCell().innerHTML = column;
     });
