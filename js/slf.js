@@ -399,6 +399,13 @@ class Game {
     this.serverConn.send(this.singleAnswerMessage(column, answer));
   }
 
+  sendEndRoundSignalToServer() {
+    this.serverConn.send({
+      type: "endRound",
+      payload: {}
+    });
+  }
+
   sendGameStateToServer() {
     // assert that we are in play mode
     if (this.uiState != "play") {
@@ -484,6 +491,18 @@ class Game {
       }
       else if (this.uiState == "play") {
         this.handleCurrentRoundUpdate(data.payload.answers);
+      }
+    }
+    // end round message from client
+    else if (messageType == "endRound") {
+      if (this.uiState == "host") {
+        this.endRoundByPlayerSignal();
+      }
+      else if (this.uiState == "play") {
+        // we're not supposed to get these
+        console.log('received end round message in play mode');
+        console.log('this should not happen');
+        console.log(data);
       }
     }
   }
@@ -631,6 +650,18 @@ class Game {
     return str.replace(/[^a-zA-Z0-9]/g, "");
   }
 
+  endRoundByPlayerSignal() {
+    console.log('received end round signal from player');
+    // check if current round has answers
+    if (this.getCurrentRound().answers.length == 0) {
+      // if not, we can assume that we already ended the round in question
+      console.log('round already ended. ignoring signal');
+      return;
+    }
+    console.log('ending round');
+    this.endRound();
+  }
+
   submitPointInput() {
     // get currently input points
     let points = 0;
@@ -645,7 +676,9 @@ class Game {
     // hide the point input table
     let pointInputTableElem = document.getElementById(this.#pointInputTableElemId);
     pointInputTableElem.style.display = "none";
-    // end the current round
+    // send server signal to end round
+    this.sendEndRoundSignalToServer();
+    // end the current round locally
     this.endRound();
     this.drawGameUi();
   }
