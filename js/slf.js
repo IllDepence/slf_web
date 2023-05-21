@@ -163,9 +163,9 @@ class Game {
     // add answer to current round in local game state
     this.getCurrentRound().addAnswer(player, column, answer);
     // send single answer dot to server
-    this.sendSingleAnswerDotToServer(player, column);
+    this.sendSingleAnswerToServer(player, column, answer);
     // if the player gave an answer for every column, draw the point input table
-    if (this.answeredAll()) {
+    if (this.uiState == 'play' && this.answeredAll()) {
       this.drawPointInputTable();
     }
   }
@@ -335,12 +335,22 @@ class Game {
     };
   }
 
-  singleAnswerDotMessage(column) {
+  singleAnswerMessage(column, answer) {
     return {
-      type: "singleAnswerDot",
+      type: "singleAnswer",
       payload: {
         player: this.player,
-        column: column
+        column: column,
+        answer: answer
+      }
+    };
+  }
+
+  currentRoundUpdateMessage() {
+    return {
+      type: "currentRoundUpdate",
+      payload: {
+        answers: this.getCurrentRound().answers
       }
     };
   }
@@ -350,30 +360,39 @@ class Game {
     return this.players.find((p) => p.id == peerId);
   }
 
-  sendSingleAnswerDotToPlayers(dotMsg) {
-    this.sendMessageToPlayers(dotMsg);
+  sendCurrentRoundUpdateToPlayers() {
+    this.sendMessageToPlayers(this.currentRoundUpdateMessage());
   }
 
-  handleSingleAnswerDot(dot) {
-    // put a dot below the input field
-    let column = dot.column;
-    let player = dot.player;
-    // put player's answer dot in the column
-    let inputTableBodyCellElemId = this.#gameInputTableElemId + "-" + this.idSafe(column) + "-dots";
-    console.log(`putting dot in ${inputTableBodyCellElemId}`);
-    let inputTableBodyCellElem = document.getElementById(inputTableBodyCellElemId);
-    inputTableBodyCellElem.appendChild(this.playerDotElement(player));
+  handleCurrentRoundUpdate(answers) {
+    console.log('updating current round with answers');
+    // update the current round with the answers
+    this.getCurrentRound().answers = answers;
+    // clear all dot indicator divs
+    let dotIndicatorDivs = document.getElementsByClassName("dot-indicator");
+    for (let dotIndicatorDiv of dotIndicatorDivs) {
+      dotIndicatorDiv.innerHTML = "";
+    }
+    // update dot indicators
+    for (let answer of answers) {
+      let column = answer.column;
+      let player = answer.player;
+      // put player's answer dot in the column
+      let dotsDivId = this.#gameInputTableElemId + "-" + this.idSafe(column) + "-dots";
+      let dotsDiv = document.getElementById(dotsDivId);
+      dotsDiv.appendChild(this.playerDotElement(player));
+    }
   }
 
-  sendSingleAnswerDotToServer(player, column) {
+  sendSingleAnswerToServer(player, column, answer) {
     // assert that we are in play mode
     if (this.uiState != "play") {
       console.log('not in play mode, not sending single answer dot to server');
       return;
     }
     // send the single answer dot to the server
-    console.log('sending single answer dot to server');
-    this.serverConn.send(this.singleAnswerDotMessage(column));
+    console.log('sending single answer to server');
+    this.serverConn.send(this.singleAnswerMessage(column, answer));
   }
 
   sendGameStateToServer() {
@@ -436,15 +455,31 @@ class Game {
         this.sendGameStateToPlayers();
       }
     }
-    // single answer dot message
-    else if (messageType == "singleAnswerDot") {
-      // if we're the server, relay the message to all players
+    // single answer message
+    else if (messageType == "singleAnswer") {
       if (this.uiState == "host") {
-        this.sendSingleAnswerDotToPlayers(data);
+        // add answer to current round
+        this.addAnswer(data.payload.player, data.payload.column, data.payload.answer);
+        // propagate current state of current round to all players
+        this.sendCurrentRoundUpdateToPlayers();
       }
-      // if we're a player, handle the message
       else if (this.uiState == "play") {
-        this.handleSingleAnswerDot(data.payload);
+        // we're not supposed to get these
+        console.log('received single answer message in play mode');
+        console.log('this should not happen');
+        console.log(data);
+      }
+    }
+    // current round update message
+    else if (messageType == "currentRoundUpdate") {
+      if (this.uiState == "host") {
+        // we're not supposed to get these
+        console.log('received current round update message in host mode');
+        console.log('this should not happen');
+        console.log(data);
+      }
+      else if (this.uiState == "play") {
+        this.handleCurrentRoundUpdate(data.payload.answers);
       }
     }
   }
@@ -725,9 +760,10 @@ class Game {
       //   inputElem.disabled = currentInputDisabled[column];
       // }
       inputTableBodyCellElem.appendChild(inputElem);
-      // add dif for indicators of other players that already answered
+      // add div for indicators of other players that already answered
       let inputTableDotsElem = document.createElement("div");
       inputTableDotsElem.id = this.#gameInputTableElemId + "-" + this.idSafe(column) + "-dots";
+      inputTableDotsElem.classList.add('dot-indicator');
       inputTableBodyCellElem.appendChild(inputTableDotsElem);
       // let currentRound = this.getCurrentRound();
       // // if there is a current round
