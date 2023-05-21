@@ -393,7 +393,10 @@ class Game {
 
   deactiveServerPwInputs() {
     // deactivate the button
-    document.getElementById(this.#serverPwSetElemId).disabled = true;
+    let pwButt = document.getElementById(this.#serverPwSetElemId);
+    pwButt.disabled = true;
+    pwButt.textContent = "Done";
+    pwButt.classList.remove("is-light");
     // make the input field read-only
     document.getElementById(this.#serverPwInputElemId).readOnly = true;
   }
@@ -446,7 +449,10 @@ class Game {
 
     // setup game columns input
     let gameColumnsInput = document.getElementById(this.#gameColumnsInputElemId);
-    this.checkGameColumns(); // run prior to user input once
+    // run prior to user input once if game columns aren't set yet
+    if (this.columns.length == 0) {
+      this.checkGameColumns(); 
+    }
     // set eventlistener on input
     gameColumnsInput.addEventListener("input", this.checkGameColumns.bind(this));
     // setup set game columns button
