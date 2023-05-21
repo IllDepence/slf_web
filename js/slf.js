@@ -364,15 +364,19 @@ class Game {
     this.sendMessageToPlayers(this.currentRoundUpdateMessage());
   }
 
+  clearDotIndicators() {
+    let dotIndicatorDivs = document.getElementsByClassName("dot-indicator");
+    for (let dotIndicatorDiv of dotIndicatorDivs) {
+      dotIndicatorDiv.innerHTML = "";
+    }
+  }
+
   handleCurrentRoundUpdate(answers) {
     console.log('updating current round with answers');
     // update the current round with the answers
     this.getCurrentRound().answers = answers;
     // clear all dot indicator divs
-    let dotIndicatorDivs = document.getElementsByClassName("dot-indicator");
-    for (let dotIndicatorDiv of dotIndicatorDivs) {
-      dotIndicatorDiv.innerHTML = "";
-    }
+    this.clearDotIndicators();
     // update dot indicators
     for (let answer of answers) {
       let column = answer.column;
@@ -636,6 +640,8 @@ class Game {
     });
     // add points to player
     this.player.score += points;
+    // clear dot indicators
+    this.clearDotIndicators();
     // hide the point input table
     let pointInputTableElem = document.getElementById(this.#pointInputTableElemId);
     pointInputTableElem.style.display = "none";
