@@ -221,8 +221,31 @@ class Game {
     document.getElementById(this.#serverPwInputElemId).readOnly = true;
   }
 
+  checkGameColumns() {
+    // helper function to check the game columns input
+    // and update the button text accordingly
+    let gameColumnsInput = document.getElementById(this.#gameColumnsInputElemId);
+    let regex = /^(?!\s*,)(?!.*,\s*$)(?!.*,\s*,).+$/;
+    let gameColumnsSet = document.getElementById(this.#gameColumnsSetElemId);
+    let gameColumnsSetText = '';
+    if (!regex.test(gameColumnsInput.value)) {
+      gameColumnsInput.classList.add("is-invalid");
+      gameColumnsInput.style.backgroundColor = "#ffe5e5";
+      gameColumnsSetText = 'Set Columns';
+    } else {
+      gameColumnsInput.classList.remove("is-invalid");
+      gameColumnsInput.style.backgroundColor = "";
+      let columns = gameColumnsInput.value.split(/\s*,\s*/);
+      let numCols = columns.length;
+      gameColumnsSetText = `Set Columns (${numCols})`;
+    }
+    gameColumnsSet.textContent = gameColumnsSetText;
+  }
+
   drawServerUi() {
-    // set the server ID
+    // TODO: if server ID is not set, generate one (peerJS init stuff)
+
+    // show the server ID
     document.getElementById(this.#serverIdInputElemId).value = this.serverId;
     // initialize server ID copy button
     document.getElementById(this.#serverIdCopyElemId).addEventListener("click", () => {
@@ -234,7 +257,7 @@ class Game {
       document.getElementById(this.#serverPwInputElemId).value = this.serverPw;
       this.deactiveServerPwInputs();
     }
-    else{ 
+    else{
       // initialize server password set button
       document.getElementById(this.#serverPwSetElemId).addEventListener("click", () => {
         // set the server password
@@ -242,6 +265,30 @@ class Game {
         this.deactiveServerPwInputs();
       });
     }
+
+    // setup game columns input
+    let gameColumnsInput = document.getElementById(this.#gameColumnsInputElemId);
+    this.checkGameColumns(); // run prior to user input once
+    // set eventlistener on input
+    gameColumnsInput.addEventListener("input", this.checkGameColumns.bind(this));
+    // setup set game columns button
+    let gameColumnsSet = document.getElementById("gameColumnsSet");
+    gameColumnsSet.addEventListener("click", () => {
+      if (!gameColumnsInput.classList.contains("is-invalid")) {
+        let parsedColumns = [];
+        gameColumnsSet.classList.remove("is-warning");
+        gameColumnsSet.disabled = true;
+        gameColumnsSet.textContent = "Done";
+        let columns = gameColumnsInput.value.split(/\s*,\s*/);
+        parsedColumns.push(...columns);
+        // set the game columns
+        this.columns = parsedColumns;
+        gameColumnsInput.disabled = true;
+        // Reveal server ID for copying
+        let serverIdInput = document.getElementById('serverId');
+        serverIdInput.value = this.serverId;
+      }
+    });
 
     // draw the player list
     let playerListElem = document.getElementById(this.#playerListElemId);
