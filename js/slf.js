@@ -85,13 +85,14 @@ class Game {
   #gameInputTableElemId = "gameInputTable";
   #peerListElemId = "peerList";
 
-  constructor(columns = [], players = [], rounds = [], player = null, serverId = null , serverPw = null) {
+  constructor(columns = [], players = [], rounds = [], player = null, serverId = null, serverPw = null, peerJsObj = null) {
     this.columns = columns;
     this.players = players;
     this.rounds = rounds;
     this.player = player;
     this.serverId = serverId;
     this.serverPw = serverPw;
+    this.peerJsObj = peerJsObj;
     // setup UI
     this.uiState = "start";
     document.addEventListener('DOMContentLoaded', () => {
@@ -206,11 +207,26 @@ class Game {
   }
 
   drawGameUi() {
-    if (this.uiState == "play") {
-      this.drawPlayUi(this.player);
+    // draws game UI in playing or hosting state
+    // *also* ensures that we have peerJS set up
+
+    // if we're either playing or hosting and the peerJsObj is not yet initialized
+    if ((this.uiState == "play" || this.uiState == "host") && this.peerJsObj == null) {
+      // setup peerJsObj and call this function again
+      const peer = new Peer();
+      // Get an ID for peer discovery
+      peer.on('open', id => {
+        this.peerJsObj = peer;
+        this.drawGameUi();
+      });
     }
-    else if (this.uiState == "host") {
-      this.drawServerUi();
+    else {
+      if (this.uiState == "play") {
+        this.drawPlayUi(this.player);
+      }
+      else if (this.uiState == "host") {
+        this.drawServerUi();
+      }
     }
   }
 
@@ -243,10 +259,11 @@ class Game {
   }
 
   drawServerUi() {
-    // TODO: if server ID is not set, generate one (peerJS init stuff)
-
-    // show the server ID
-    document.getElementById(this.#serverIdInputElemId).value = this.serverId;
+    this.serverId = this.peerJsObj.id;
+    // show the server ID if game columns are set
+    if (this.gameColumns != null && this.gameColumns.length > 0) {
+      document.getElementById(this.#serverIdInputElemId).value = this.serverId;
+    }
     // initialize server ID copy button
     document.getElementById(this.#serverIdCopyElemId).addEventListener("click", () => {
       navigator.clipboard.writeText(this.serverId);
@@ -272,7 +289,7 @@ class Game {
     // set eventlistener on input
     gameColumnsInput.addEventListener("input", this.checkGameColumns.bind(this));
     // setup set game columns button
-    let gameColumnsSet = document.getElementById("gameColumnsSet");
+    let gameColumnsSet = document.getElementById(this.#gameColumnsSetElemId);
     gameColumnsSet.addEventListener("click", () => {
       if (!gameColumnsInput.classList.contains("is-invalid")) {
         let parsedColumns = [];
@@ -285,7 +302,7 @@ class Game {
         this.columns = parsedColumns;
         gameColumnsInput.disabled = true;
         // Reveal server ID for copying
-        let serverIdInput = document.getElementById('serverId');
+        let serverIdInput = document.getElementById(this.#serverIdInputElemId);
         serverIdInput.value = this.serverId;
       }
     });
