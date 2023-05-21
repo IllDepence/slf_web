@@ -533,13 +533,14 @@ class Game {
     let answerTableHeadElem = answerTableElem.createTHead();
     let answerTableHeadRowElem = answerTableHeadElem.insertRow();
     this.columns.forEach((column) => {
-      answerTableHeadRowElem.insertCell().innerHTML = column;
+      let answerTableHeadCellElem = document.createElement("th");
+      answerTableHeadCellElem.innerHTML = column;
+      answerTableHeadRowElem.appendChild(answerTableHeadCellElem);
     });
     // table body
     let answerTableBodyElem = answerTableElem.createTBody();
     // for each finished round
-    // this.rounds.filter((round) => round.finished).forEach((round) => {
-    this.rounds.forEach((round) => {
+    this.rounds.filter((round) => round.finished).forEach((round) => {
       let answerTableBodyRowElem = answerTableBodyElem.insertRow();
       this.columns.forEach((column) => {
         // for each column
@@ -564,6 +565,16 @@ class Game {
 
     // draw the input table
     let inputTableElem = document.getElementById(this.#gameInputTableElemId);
+    // remember current input values and (dis)abled state of all columns
+    let currentInputValues = {};
+    let currentInputDisabled = {};
+    this.columns.forEach((column) => {
+      let inputElem = document.getElementById(this.#gameInputTableElemId + "-" + column);
+      if (inputElem) {
+        currentInputValues[column] = inputElem.value;
+        currentInputDisabled[column] = inputElem.disabled;
+      }
+    });
     // clear
     inputTableElem.innerHTML = "";
     // add input elements
@@ -572,6 +583,7 @@ class Game {
     this.columns.forEach((column) => {
       let inputTableBodyCellElem = inputTableBodyRowElem.insertCell();
       let inputElem = document.createElement("input");
+      inputElem.id = this.#gameInputTableElemId + "-" + column;
       inputElem.type = "text";
       inputElem.classList.add('input');
       inputElem.addEventListener("keyup", (event) => {
@@ -582,6 +594,14 @@ class Game {
           inputElem.disabled = true;
         }
       });
+      // set previous input value and (dis)abled state if exists
+      let previousInputValue = currentInputValues[column];
+      if (previousInputValue) {
+        inputElem.value = previousInputValue;
+      }
+      if (currentInputDisabled[column]) {
+        inputElem.disabled = currentInputDisabled[column];
+      }
       inputTableBodyCellElem.appendChild(inputElem);
       // add indicator for other players that already answered
       let inputTableDotsElem = document.createElement("div");
