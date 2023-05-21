@@ -154,8 +154,8 @@ class Game {
   addAnswer(player, column, answer) {
     // add answer to current round in local game state
     this.getCurrentRound().addAnswer(player, column, answer);
-    // send updated game state to server
-    this.sendGameStateToServer();
+    // send single answer dot to server
+    this.sendSingleAnswerDotToServer(player, column);
   }
 
   sumScore(rounds) {
@@ -323,9 +323,45 @@ class Game {
     };
   }
 
+  singleAnswerDotMessage(column) {
+    return {
+      type: "singleAnswerDot",
+      payload: {
+        player: this.player,
+        column: column
+      }
+    };
+  }
+
   getPlayerByPeerId(peerId) {
     // get the player object corresponding to a peerJS ID
     return this.players.find((p) => p.id == peerId);
+  }
+
+  sendSingleAnswerDotToPlayers(dotMsg) {
+    this.sendMessageToPlayers(dotMsg);
+  }
+
+  handleSingleAnswerDot(dot) {
+    // put a dot below the input field
+    let column = dot.column;
+    let player = dot.player;
+    // put player's answer dot in the column
+    let inputTableBodyCellElemId = this.#gameInputTableElemId + "-" + this.idSafe(column) + "-dots";
+    console.log(`putting dot in ${inputTableBodyCellElemId}`);
+    let inputTableBodyCellElem = document.getElementById(inputTableBodyCellElemId);
+    inputTableBodyCellElem.appendChild(this.playerDotElement(player));
+  }
+
+  sendSingleAnswerDotToServer(player, column) {
+    // assert that we are in play mode
+    if (this.uiState != "play") {
+      console.log('not in play mode, not sending single answer dot to server');
+      return;
+    }
+    // send the single answer dot to the server
+    console.log('sending single answer dot to server');
+    this.serverConn.send(this.singleAnswerDotMessage(column));
   }
 
   sendGameStateToServer() {
@@ -340,6 +376,10 @@ class Game {
   }
 
   sendGameStateToPlayers() {
+    this.sendMessageToPlayers(this.updateGameStateMessage());
+  }
+
+  sendMessageToPlayers(message) {
     // assert that we are in host mode
     if (this.uiState != "host") {
       console.log('not in host mode, not sending game state to players');
@@ -357,8 +397,8 @@ class Game {
       let conn = conns[0]; // Note: can there be multiple connections per peer?
       let player = this.getPlayerByPeerId(connId);
       if (player != null) {
-        console.log(`sending game state to player ${player.name}`);
-        conn.send(this.updateGameStateMessage());
+        console.log(`sending ${message.type} message to player ${player.name}`);
+        conn.send(message);
       }
     }
   }
@@ -382,6 +422,17 @@ class Game {
       // if we're the server, send the updated game state to all players
       if (this.uiState == "host") {
         this.sendGameStateToPlayers();
+      }
+    }
+    // single answer dot message
+    else if (messageType == "singleAnswerDot") {
+      // if we're the server, relay the message to all players
+      if (this.uiState == "host") {
+        this.sendSingleAnswerDotToPlayers(data);
+      }
+      // if we're a player, handle the message
+      else if (this.uiState == "play") {
+        this.handleSingleAnswerDot(data.payload);
       }
     }
   }
@@ -524,6 +575,11 @@ class Game {
     return dotSpan;
   }
 
+  idSafe(str) {
+    // helper function to make a string safe for use in HTML element IDs
+    return str.replace(/[^a-zA-Z0-9]/g, "");
+  }
+
   drawPlayUi(myPlayerName) {
     // draw the answer table
     let answerTableElem = document.getElementById(this.#gameAnswerTableElemId);
@@ -569,7 +625,7 @@ class Game {
     let currentInputValues = {};
     let currentInputDisabled = {};
     this.columns.forEach((column) => {
-      let inputElem = document.getElementById(this.#gameInputTableElemId + "-" + column);
+      let inputElem = document.getElementById(this.#gameInputTableElemId + "-" + this.idSafe(column));
       if (inputElem) {
         currentInputValues[column] = inputElem.value;
         currentInputDisabled[column] = inputElem.disabled;
@@ -605,6 +661,7 @@ class Game {
       inputTableBodyCellElem.appendChild(inputElem);
       // add indicator for other players that already answered
       let inputTableDotsElem = document.createElement("div");
+      inputTableDotsElem.id = this.#gameInputTableElemId + "-" + this.idSafe(column) + "-dots";
       inputTableBodyCellElem.appendChild(inputTableDotsElem);
       let currentRound = this.getCurrentRound();
       // if there is a current round
