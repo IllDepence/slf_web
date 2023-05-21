@@ -296,6 +296,7 @@ class Game {
     setTimeout(() => {
       this.sendGameStateToPlayers();
     } , 1000);
+    this.drawGameUi();
   }
 
   updateGameStateMessage() {
@@ -481,11 +482,18 @@ class Game {
     // fill
     this.players.forEach((player) => {
       let row = playerListElem.insertRow();
-      row.insertCell().innerHTML = player.color;
+      row.insertCell().appendChild(this.playerDotElement(player));
       row.insertCell().innerHTML = player.name;
       row.insertCell().innerHTML = player.id;
       row.insertCell().innerHTML = player.score;
     });
+  }
+
+  playerDotElement(player) {
+    let dotSpan = document.createElement("span");
+    dotSpan.innerHTML = "●";
+    dotSpan.style.color = player.color;
+    return dotSpan;
   }
 
   drawPlayUi(myPlayerName) {
@@ -520,9 +528,7 @@ class Game {
         let answerOrderElem = document.createElement("p");
         roundAnswers.forEach((answer) => {
           let answerOrderDotElem = document.createElement("span");
-          answerOrderDotElem.innerHTML = "●";
-          answerOrderDotElem.style.color = answer.player.color;
-          answerOrderElem.appendChild(answerOrderDotElem);
+          answerOrderElem.appendChild(this.playerDotElement(answer.player));
         });
         answerTableBodyCellElem.appendChild(answerOrderElem);
       });
@@ -549,16 +555,13 @@ class Game {
       });
       inputTableBodyCellElem.appendChild(inputElem);
       // add indicator for other players that already answered
-      let inputTableBodyCellDivElem = document.createElement("div");
-      inputTableBodyCellElem.appendChild(inputTableBodyCellDivElem);
+      let inputTableDotsElem = document.createElement("div");
+      inputTableBodyCellElem.appendChild(inputTableDotsElem);
       let currentRound = this.getCurrentRound();
       // if there is a current round
       if (currentRound) {
         currentRound.answers.filter((answer) => answer.column == column).forEach((answer) => {
-          let inputTableBodyCellDivDotElem = document.createElement("span");
-          inputTableBodyCellDivDotElem.innerHTML = "●";
-          inputTableBodyCellDivDotElem.style.color = answer.player.color;
-          inputTableBodyCellDivElem.appendChild(inputTableBodyCellDivDotElem);
+          inputTableDotsElem.appendChild(this.playerDotElement(answer.player));
         });
       }
     });
