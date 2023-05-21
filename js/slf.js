@@ -18,8 +18,8 @@ class Player {
 
 class Answer {
 
-  constructor(playerName, column, answer, score = null) {
-    this.playerName = playerName;
+  constructor(player, column, answer, score = null) {
+    this.player = player;
     this.column = column;
     this.answer = answer;
     this.score = score;
@@ -38,7 +38,7 @@ class Round {
   // - a player
   // - the answer itself
 
-  constructor(letter, finished = false, answers = []) {
+  constructor(letter = null, finished = false, answers = []) {
     this.letter = letter;
     this.finished = finished;
     this.answers = answers;
@@ -49,7 +49,7 @@ class Round {
   }
 
   addAnswer(player, column, answer) {
-    this.answers.push(new Answer(playerName, column, answer));
+    this.answers.push(new Answer(player, column, answer));
   }
 
 }
@@ -87,12 +87,12 @@ class Game {
 
   constructor(
     columns = [],
-    players = [],  // server side
-    player = null,  // player side
+    players = [],
+    player = null,  // player side only
     rounds = [],
     serverId = null,
     serverPw = null,
-    serverConn = null,  // player side
+    serverConn = null,  // player side only
     peerJsObj = null,
   ) {
     this.columns = columns;
@@ -113,9 +113,16 @@ class Game {
 
   updateGameState(state) {
     // complete update of the game state
+    // use columns as is (are just strings)
     this.columns = state.columns;
-    this.players = state.players;
-    this.rounds = state.rounds;
+    // cast player objects
+    this.players = state.players.map(
+      (player) => new Player(player.name, player.color, player.id, player.score)
+    );
+    // cast round objects
+    this.rounds = state.rounds.map(
+      (round) => new Round(round.letter, round.finished, round.answers)
+    );
     // update UI accordingly
     this.drawGameUi();
   }
@@ -126,6 +133,10 @@ class Game {
   }
 
   getCurrentRound() {
+    // if there is no non-finished round, start a new one
+    if (this.rounds.length === 0 || this.rounds[this.rounds.length - 1].finished) {
+      this.startRound();
+    }
     // return the current round
     return this.rounds[this.rounds.length - 1];
   }
@@ -141,8 +152,10 @@ class Game {
   }
 
   addAnswer(player, column, answer) {
-    // add an answer to the current round
+    // add answer to current round in local game state
     this.getCurrentRound().addAnswer(player, column, answer);
+    // send updated game state to server
+    this.sendGameStateToServer();
   }
 
   sumScore(rounds) {
@@ -315,6 +328,17 @@ class Game {
     return this.players.find((p) => p.id == peerId);
   }
 
+  sendGameStateToServer() {
+    // assert that we are in play mode
+    if (this.uiState != "play") {
+      console.log('not in play mode, not sending game state to server');
+      return;
+    }
+    // send the game state to the server
+    console.log('sending game state to server');
+    this.serverConn.send(this.updateGameStateMessage());
+  }
+
   sendGameStateToPlayers() {
     // assert that we are in host mode
     if (this.uiState != "host") {
@@ -355,6 +379,10 @@ class Game {
     // update game state message
     if (messageType == "updateGameState") {
       this.updateGameState(data.payload);
+      // if we're the server, send the updated game state to all players
+      if (this.uiState == "host") {
+        this.sendGameStateToPlayers();
+      }
     }
   }
 
@@ -509,10 +537,10 @@ class Game {
     });
     // table body
     let answerTableBodyElem = answerTableElem.createTBody();
+    // for each finished round
+    // this.rounds.filter((round) => round.finished).forEach((round) => {
     this.rounds.forEach((round) => {
-      // for each round
       let answerTableBodyRowElem = answerTableBodyElem.insertRow();
-      answerTableBodyRowElem.insertCell().innerHTML = round.letter;
       this.columns.forEach((column) => {
         // for each column
         let roundAnswers = round.answers.filter((answer) => answer.column == column);
@@ -545,6 +573,7 @@ class Game {
       let inputTableBodyCellElem = inputTableBodyRowElem.insertCell();
       let inputElem = document.createElement("input");
       inputElem.type = "text";
+      inputElem.classList.add('input');
       inputElem.addEventListener("keyup", (event) => {
         if (event.key === "Enter") {
           // add the answer to the current round
