@@ -648,6 +648,8 @@ class Game {
     let answerTableElem = document.getElementById(this.#gameAnswerTableElemId);
     // clear
     answerTableElem.innerHTML = "";
+    // make table layout fixed
+    answerTableElem.style.tableLayout = "fixed";
     // table head
     let answerTableHeadElem = answerTableElem.createTHead();
     let answerTableHeadRowElem = answerTableHeadElem.insertRow();
