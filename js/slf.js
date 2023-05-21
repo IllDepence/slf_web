@@ -514,7 +514,7 @@ class Game {
     }
     else if (this.uiState == "play") {
       console.log('drawing play UI');
-      this.drawPlayUi(this.player);
+      this.drawPlayUi();
     }
   }
 
@@ -678,7 +678,7 @@ class Game {
     });
   }
 
-  drawPlayUi(myPlayerName) {
+  drawPlayUi() {
     // draw the answer table
     let answerTableElem = document.getElementById(this.#gameAnswerTableElemId);
     // clear
@@ -700,9 +700,9 @@ class Game {
       let answerTableBodyRowElem = answerTableBodyElem.insertRow();
       this.columns.forEach((column) => {
         // for each column
-        let roundAnswers = round.answers.filter((answer) => answer.column == column);
+        let cellAnswers = round.answers.filter((answer) => answer.column == column);
         // add player's own answer to cell
-        let myAnswer = roundAnswers.find((answer) => answer.player == myPlayerName);
+        let myAnswer = cellAnswers.find((answer) => answer.player.name == this.player.name);
         let answerTableBodyCellElem = answerTableBodyRowElem.insertCell();
         let myAnswerElem = document.createElement("p");
         if (myAnswer) {
@@ -712,7 +712,7 @@ class Game {
         // add indicator for order of answers from all players to cell
         let answerOrderElem = document.createElement("span");
         answerOrderElem.innerHTML = "&nbsp;"; // separator
-        roundAnswers.forEach((answer) => {
+        cellAnswers.forEach((answer) => {
           let answerOrderDotElem = document.createElement("span");
           answerOrderElem.appendChild(this.playerDotElement(answer.player));
         });
@@ -746,7 +746,7 @@ class Game {
       inputElem.addEventListener("keyup", (event) => {
         if (event.key === "Enter") {
           // add the answer to the current round
-          this.addAnswer(myPlayerName, column, inputElem.value);
+          this.addAnswer(this.player, column, inputElem.value);
           // disable the input element
           inputElem.disabled = true;
         }
