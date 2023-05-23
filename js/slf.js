@@ -90,14 +90,17 @@ class Game {
   constructor(
     columns = [],
     players = [],
-    player = null,  // player side only
+    player = null,
     rounds = [],
     serverId = null,
     serverPw = null,
-    serverConn = null,  // player side only
+    serverConn = null,
     peerJsObj = null,
   ) {
     this.columns = columns;
+    // about this.players:
+    // if we're server, we maintain this list
+    // if we're player, we don't touch this list, only update on server messages
     this.players = players;
     this.player = player;  // player side only
     this.rounds = rounds;
@@ -565,6 +568,8 @@ class Game {
     pointInputTableElem.style.display = "none";
     // send server signal to end round
     this.sendEndRoundSignalToServer();
+    // send player state (includes score) to server
+    this.sendPlayerStateToServer();
     // end the current round locally
     this.endRound();
     this.drawGameUi();
@@ -669,6 +674,18 @@ class Game {
         console.log(data);
       }
     }
+    // round end player state message
+    else if (messageType == "playerState") {
+      if (this.uiState == "host") {
+        this.handlePlayerStateUpdate(data.payload.player);
+      }
+      else if (this.uiState == "play") {
+        // we're not supposed to get these
+        console.log('received round points message in play mode');
+        console.log('this should not happen');
+        console.log(data);
+      }
+    }
   }
 
   /* - - - - - - - network > client - - - - - - - */
@@ -755,6 +772,15 @@ class Game {
     });
   }
 
+  sendPlayerStateToServer(points) {
+    this.serverConn.send({
+      type: "playerState",
+      payload: {
+        player: this.player
+      }
+    });
+  }
+
   sendGameStateToServer() {
     // assert that we are in play mode
     if (this.uiState != "play") {
@@ -809,6 +835,18 @@ class Game {
     setTimeout(() => {
       this.sendGameStateToPlayers();
     } , 1000);
+    this.drawGameUi();
+  }
+
+  handlePlayerStateUpdate(player) {
+    // handle message from player sent at the end of a round
+    // (contains updated score)
+    for (let p of this.players) {
+      if (p.id == player.id && p.name == player.name) {
+        p.score = player.score;
+        break;
+      }
+    }
     this.drawGameUi();
   }
 
