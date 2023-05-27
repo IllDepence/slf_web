@@ -507,6 +507,18 @@ class Game {
     return this.rounds[this.rounds.length - 1];
   }
 
+  getLastFinishedRound() {
+    // get to most recently ended round (to add scores to answers)
+    let lastFinishedRound = null;
+    for (let i = this.rounds.length - 1; i >= 0; i--) {
+      if (this.rounds[i].finished) {
+        lastFinishedRound = this.rounds[i];
+        break;
+      }
+    }
+    return lastFinishedRound;
+  }
+
   startRound(letter) {
     // start a new round with a given letter
     this.rounds.push(new Round(letter));
@@ -549,12 +561,15 @@ class Game {
   }
 
   submitPointInput() {
-    // get currently input points
-    let points = 0;
+    // get currently input answer scores
+    let roundScores = [];
     this.columns.forEach((column) => {
       let inputElem = document.getElementById(this.idSafe(`points_${column}`));
-      answerScore = parseInt(inputElem.value);
-      points += parseInt(inputElem.value);
+      let answerScore = parseInt(inputElem.value);
+      roundScores.push({
+        column: column,
+        score: answerScore
+      });
       // assign score to the answer
       this.getCurrentRound().assignScoreToAnswer(
         this.player,
@@ -562,8 +577,6 @@ class Game {
         answerScore
       );
     });
-    // add points to player
-    this.player.score += points;
     // clear dot indicators
     this.clearDotIndicators();
     // hide the point input table
@@ -571,8 +584,11 @@ class Game {
     pointInputTableElem.style.display = "none";
     // send server signal to end round
     this.sendEndRoundSignalToServer();
-    // send player state (includes score) to server
-    this.sendPlayerStateToServer();
+    // send roundScores using this.sendRoundScoresToServer
+    // send with a timeout of 250 ms to make sure the endRoundSignal arrives first
+    setTimeout(() => {
+      this.sendRoundScoresToServer(roundScores);
+    }, 250);
     // end the current round locally
     this.endRound();
     this.drawGameUi();
@@ -677,10 +693,10 @@ class Game {
         console.log(data);
       }
     }
-    // round end player state message
-    else if (messageType == "playerState") {
+    // round scores message
+    else if (messageType == "roundScores") {
       if (this.uiState == "host") {
-        this.handlePlayerStateUpdate(data.payload.player);
+        this.handleRoundScoresUpdate(data.payload);
       }
       else if (this.uiState == "play") {
         // we're not supposed to get these
@@ -775,11 +791,12 @@ class Game {
     });
   }
 
-  sendPlayerStateToServer(points) {
+  sendRoundScoresToServer(roundScores) {
     this.serverConn.send({
-      type: "playerState",
+      type: "roundScores",
       payload: {
-        player: this.player
+        player: this.player,
+        roundScores: roundScores
       }
     });
   }
@@ -841,14 +858,20 @@ class Game {
     this.drawGameUi();
   }
 
-  handlePlayerStateUpdate(player) {
+  handleRoundScoresUpdate(payload) {
+    console.log('handling round scores update by player');
+    let player = payload.player;
+    let roundScores = payload.roundScores;
     // handle message from player sent at the end of a round
-    // (contains updated score)
-    for (let p of this.players) {
-      if (p.id == player.id && p.name == player.name) {
-        p.score = player.score;
-        break;
-      }
+    // (contains scores for their answers of the round)
+    let lastFinishedRound = this.getLastFinishedRound();
+    for (let roundScore of roundScores) {
+      // assign the score to the corresponding answers
+      lastFinishedRound.assignScoreToAnswer(
+        player,
+        roundScore.column,
+        roundScore.score
+      );
     }
     this.drawGameUi();
   }
