@@ -71,7 +71,12 @@
     <section id="serverScreen" class="section" style="display: none;">
       <div class="container">
         <div class="columns">
-          <div class="column is-4">
+          <div class="column is-1" id="serverCtrlFoldedCol" style="display: none;">
+            <div>
+              <p class="is-size-4"><a id="serverCtrlUnfold">&nbsp;〉</a></p>
+            </div>
+          </div>
+          <div class="column is-4" id="serverCtrlCol">
             <div class="field">
               <h2 class="subtitle">Server ID</h2>
             </div>
@@ -92,6 +97,10 @@
             <div class="field">
               <textarea class="textarea" id="gameColumns" placeholder="Stadt, Land, Fluss, ..."></textarea>
               <a class="button is-warning" id="gameColumnsSet">Set Columns</a>
+            </div>
+            <div>
+              <br>
+              <p class="is-size-4"><a id="serverCtrlFold">〈&nbsp;</a></p>
             </div>
           </div>
           <div class="column is-offset-1">

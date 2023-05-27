@@ -80,6 +80,10 @@ class Game {
   #gameColumnsInputElemId = "gameColumns";
   #gameColumnsSetElemId = "gameColumnsSet";
   #playerListElemId = "playerList";
+  #serverCtrlElemId = "serverCtrlCol";
+  #serverCtrlFoldedElemId = "serverCtrlFoldedCol";
+  #serverCtrlFoldElemId = "serverCtrlFold";
+  #serverCtrlUnfoldElemId = "serverCtrlUnfold";
   // player view element IDs
   #playScreenElemId = "playScreen";
   #gameAnswerTableElemId = "gameAnswerTable";
@@ -131,6 +135,14 @@ class Game {
     });
     document.getElementById(this.#initPlayButtonElemId).addEventListener('click', () => {
       this.setUiState("chooseName");
+    });
+    document.getElementById(this.#serverCtrlFoldElemId).addEventListener('click', () => {
+      document.getElementById(this.#serverCtrlElemId).style.display = "none";
+      document.getElementById(this.#serverCtrlFoldedElemId).style.display = "";
+    });
+    document.getElementById(this.#serverCtrlUnfoldElemId).addEventListener('click', () => {
+      document.getElementById(this.#serverCtrlElemId).style.display = "";
+      document.getElementById(this.#serverCtrlFoldedElemId).style.display = "none";
     });
     document.getElementById(this.#chooseNameFormElemId).addEventListener('submit', (e) => {
       e.preventDefault();
@@ -335,7 +347,7 @@ class Game {
       let row = playerListElem.insertRow();
       row.insertCell().appendChild(this.playerDotElement(player));
       row.insertCell().innerHTML = player.name;
-      row.insertCell().innerHTML = player.id;
+      // row.insertCell().innerHTML = player.id;
       row.insertCell().innerHTML = player.score;
     });
   }
