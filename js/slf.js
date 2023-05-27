@@ -356,7 +356,6 @@ class Game {
       let row = playerListElem.insertRow();
       row.insertCell().appendChild(this.playerDotElement(player));
       row.insertCell().innerHTML = player.name;
-      // row.insertCell().innerHTML = player.id;
       // calculate the player score based on the their answers in all finished rounds
       let playerScore = 0;
       this.rounds.filter((round) => round.finished).forEach((round) => {
