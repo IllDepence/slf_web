@@ -172,10 +172,15 @@ class Game {
     });
   }
 
-  playerDotElement(player) {
+  playerDotElement(player, pre = '', post = '') {
     let dotSpan = document.createElement("span");
-    dotSpan.innerHTML = "●";
+    dotSpan.innerHTML = pre + "●" + post;
     dotSpan.style.color = player.color;
+    // if it's our dot give it a decorative border
+    if (this.uiState == "play" && player.name == this.player.name) {
+      dotSpan.style.borderRadius = "30%";
+      dotSpan.style.border = "2px solid " + player.color;
+    }
     return dotSpan;
   }
 
@@ -459,12 +464,10 @@ class Game {
       let peerElem = document.createElement("p");
       peerElem.classList.add('level-item');
       peerElem.classList.add('has-text-centered');
-      let peerDotElem = document.createElement("span");
-      peerDotElem.innerHTML = "●&nbsp;";
-      peerDotElem.style.color = player.color;
+      let peerDotElem = this.playerDotElement(player);
       peerElem.appendChild(peerDotElem);
       let peerNameElem = document.createElement("span");
-      peerNameElem.innerHTML = player.name;
+      peerNameElem.innerHTML = "&nbsp;" + player.name;
       peerElem.appendChild(peerNameElem);
       peerListElem.appendChild(peerElem);
     });
