@@ -276,7 +276,13 @@ class Game {
     }
     // initialize server ID copy button
     document.getElementById(this.#serverIdCopyElemId).addEventListener("click", () => {
-      navigator.clipboard.writeText(this.serverId);
+      // copy to clipboard (compatible with Firefox, Chrome, Chromium, Safari, Edge)
+      let dummy = document.createElement("textarea");
+      document.body.appendChild(dummy);
+      dummy.value = this.serverId;
+      dummy.select();
+      document.execCommand("copy");
+      document.body.removeChild(dummy);
     });
 
     // show server PW if already set (i.e. when redrawing the UI)
