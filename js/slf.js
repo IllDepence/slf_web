@@ -49,8 +49,17 @@ class Round {
     this.finished = true;
   }
 
-  addAnswer(player, column, answer) {
-    this.answers.push(new Answer(player, column, answer));
+  addAnswer(player, column, answer, score = null) {
+    this.answers.push(new Answer(player, column, answer, score));
+  }
+
+  assignScoreToAnswer(player, column, score) {
+    // assign score to current round answer of player for column
+    this.answers.forEach(function (answer) {
+      if (answer.player.name === player.name && answer.column === column) {
+        answer.score = score;
+      }
+    });
   }
 
 }
@@ -425,27 +434,12 @@ class Game {
           inputElem.disabled = true;
         }
       });
-      // // set previous input value and (dis)abled state if exists
-      // let previousInputValue = currentInputValues[column];
-      // if (previousInputValue) {
-      //   inputElem.value = previousInputValue;
-      // }
-      // if (currentInputDisabled[column]) {
-      //   inputElem.disabled = currentInputDisabled[column];
-      // }
       inputTableBodyCellElem.appendChild(inputElem);
       // add div for indicators of other players that already answered
       let inputTableDotsElem = document.createElement("div");
       inputTableDotsElem.id = this.#gameInputTableElemId + "-" + this.idSafe(column) + "-dots";
       inputTableDotsElem.classList.add('dot-indicator');
       inputTableBodyCellElem.appendChild(inputTableDotsElem);
-      // let currentRound = this.getCurrentRound();
-      // // if there is a current round
-      // if (currentRound) {
-      //   currentRound.answers.filter((answer) => answer.column == column).forEach((answer) => {
-      //     inputTableDotsElem.appendChild(this.playerDotElement(answer.player));
-      //   });
-      // }
     });
 
     // draw the peer list
@@ -538,31 +532,15 @@ class Game {
   addAnswer(player, column, answer) {
     // add answer to current round in local game state
     this.getCurrentRound().addAnswer(player, column, answer);
-    // send single answer dot to server
-    this.sendSingleAnswerToServer(player, column, answer);
-    // if the player gave an answer for every column, draw the point input table
-    if (this.uiState == 'play' && this.answeredAll()) {
-      this.drawPointInputTable();
+    // if we're a player
+    if (this.uiState == 'play') {
+      // send single answer to server
+      this.sendSingleAnswerToServer(player, column, answer);
+      // if the player gave an answer for every column, draw the point input table
+      if (this.uiState == 'play' && this.answeredAll()) {
+        this.drawPointInputTable();
+      }
     }
-  }
-
-  sumScore(rounds) {
-    // sum up the scores of a given list of rounds
-    return rounds.reduce(
-      (a, b) => a + b.answers.reduce(
-        (a, b) => a + b.score, // sum up scores
-        0
-      ),
-      0
-    );
-  }
-
-  getScoreCurrentRound(player) {
-    return this.sumScore([this.getCurrentRound()]);
-  }
-
-  getTotalScore(player) {
-    return this.sumScore(this.rounds);
   }
 
   isPlayerKnown(player) {
@@ -575,7 +553,14 @@ class Game {
     let points = 0;
     this.columns.forEach((column) => {
       let inputElem = document.getElementById(this.idSafe(`points_${column}`));
+      answerScore = parseInt(inputElem.value);
       points += parseInt(inputElem.value);
+      // assign score to the answer
+      this.getCurrentRound().assignScoreToAnswer(
+        this.player,
+        column,
+        answerScore
+      );
     });
     // add points to player
     this.player.score += points;
