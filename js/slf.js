@@ -372,7 +372,7 @@ class Game {
           // answer)
           let validCellAnswers = round.answers.filter(
             (answer) => answer.column == column && answer.score != null && answer.score > 0
-          );
+          );  // FIXME: this does not work right now b/c players don’t communicate their scores
           for (let i = 0; i < validCellAnswers.length; i++) {
             let answer = validCellAnswers[i];
             if (answer.player.id == player.id) {
@@ -385,7 +385,6 @@ class Game {
         let roundBonusPoints = this.calcRoundBonusPoints(
           playerAnswerScoresRanks, this.players.length
         );
-        console.log(`${player.name}:${roundScore} (bonus: ${roundBonusPoints})`);
         playerScore += roundScore + roundBonusPoints;
       });
       row.insertCell().innerHTML = playerScore;
@@ -407,16 +406,38 @@ class Game {
       answerTableHeadCellElem.innerHTML = column;
       answerTableHeadRowElem.appendChild(answerTableHeadCellElem);
     });
+    // add a score column
+    let answerTableHeadCellElem = document.createElement("th");
+    answerTableHeadCellElem.innerHTML = "P";
+    answerTableHeadRowElem.appendChild(answerTableHeadCellElem);
     // table body
     let answerTableBodyElem = answerTableElem.createTBody();
     // for each finished round
     this.rounds.filter((round) => round.finished).forEach((round) => {
       let answerTableBodyRowElem = answerTableBodyElem.insertRow();
+      let playerAnswerScoresRanks = []; // array of (<a_score>, <a_rank>) tuples
+      // iterate over columns
       this.columns.forEach((column) => {
-        // for each column
-        let cellAnswers = round.answers.filter((answer) => answer.column == column);
-        // add player's own answer to cell
-        let myAnswer = cellAnswers.find((answer) => answer.player.name == this.player.name);
+        // get answers for the current column that have a score > 0 (don't want to
+        // assign answers a lower rank only b/c they were given later than a wrong
+        // answer)
+        let myAnswer = '';
+        let cellAnswers = round.answers.filter(
+          (answer) => answer.column == column
+        );
+        let validCellAnswers = cellAnswers.filter(
+          (answer) => answer.score != null && answer.score > 0
+        );
+        for (let i = 0; i < validCellAnswers.length; i++) {
+          let answer = validCellAnswers[i];
+          if (answer.player.id == this.player.id) {
+            // take note of score and rank
+            playerAnswerScoresRanks.push([answer.score, i + 1]);
+            // take note of players answer
+            myAnswer = answer;
+          }
+        }
+        // add answer to the table
         let answerTableBodyCellElem = answerTableBodyRowElem.insertCell();
         let myAnswerElem = document.createElement("p");
         if (myAnswer) {
@@ -432,21 +453,20 @@ class Game {
         });
         myAnswerElem.appendChild(answerOrderElem);
       });
+      // calculate score for the table row
+      let roundScore = playerAnswerScoresRanks.reduce((sum, tup) => sum + tup[0], 0);
+      let roundBonusPoints = this.calcRoundBonusPoints(
+        playerAnswerScoresRanks, this.players.length
+      );
+      let roundScoreWithBonus = roundScore + roundBonusPoints;
+      // add table cell with the score
+      let scoreCellElem = answerTableBodyRowElem.insertCell();
+      scoreCellElem.innerHTML = roundScoreWithBonus;
     });
 
     // draw the input table
     let inputTableElem = document.getElementById(this.#gameInputTableElemId);
-    // // remember current input values and (dis)abled state of all columns
-    // let currentInputValues = {};
-    // let currentInputDisabled = {};
-    // this.columns.forEach((column) => {
-    //   let inputElem = document.getElementById(this.#gameInputTableElemId + "-" + this.idSafe(column));
-    //   if (inputElem) {
-    //     currentInputValues[column] = inputElem.value;
-    //     currentInputDisabled[column] = inputElem.disabled;
-    //   }
-    // });
-    // clear
+    inputTableElem.style.tableLayout = "fixed";
     inputTableElem.innerHTML = "";
     // add input elements
     let inputTableBodyElem = inputTableElem.createTBody();
@@ -472,6 +492,13 @@ class Game {
       inputTableDotsElem.classList.add('dot-indicator');
       inputTableBodyCellElem.appendChild(inputTableDotsElem);
     });
+    // add one fill cell to compensate for the score column in the answer table
+    // the filler cell contains an invisible input element to make sure it has the correct size
+    let fillerCellElem = inputTableBodyRowElem.insertCell();
+    // let fillerInputElem = document.createElement("input");
+    // fillerInputElem.type = "text";
+    // fillerInputElem.style.visibility = "hidden";
+    // fillerCellElem.appendChild(fillerInputElem);
 
     // draw the peer list
     let peerListElem = document.getElementById(this.#peerListElemId);
@@ -508,6 +535,8 @@ class Game {
       inputElem.id = this.idSafe(`points_${column}`);
       cellElem.appendChild(inputElem);
     });
+    // add one empty cell to compensate for the score column in the answer table
+    rowElem.insertCell();
     // row with submit button
     rowElem = tableBodyElem.insertRow();
     let cellElem = rowElem.insertCell();
@@ -523,6 +552,8 @@ class Game {
     submitButtonElem.addEventListener("click", () => {
       this.submitPointInput();
     });
+    // empty cell (see above)
+    cellElem = rowElem.insertCell();
   }
 
   /* - - - - - - - game logic - - - - - - - */
@@ -635,6 +666,9 @@ class Game {
     // bonus points are an added full round score in the ideal case
     // but fall off quickly with fewer unique answers/higher ranks
     let bonusPoints = fullRoundScore * bonusFac
+
+    // round to integer
+    bonusPoints = Math.round(bonusPoints);
 
     return bonusPoints;
   }
