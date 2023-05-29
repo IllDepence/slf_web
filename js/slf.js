@@ -413,7 +413,8 @@ class Game {
     // table body
     let answerTableBodyElem = answerTableElem.createTBody();
     // for each finished round
-    this.rounds.filter((round) => round.finished).forEach((round) => {
+    let finishedRounds = this.rounds.filter((round) => round.finished);
+    finishedRounds.forEach((round, idx, finishedRounds) => {
       let answerTableBodyRowElem = answerTableBodyElem.insertRow();
       let playerAnswerScoresRanks = []; // array of (<a_score>, <a_rank>) tuples
       // iterate over columns
@@ -458,10 +459,20 @@ class Game {
       let roundBonusPoints = this.calcRoundBonusPoints(
         playerAnswerScoresRanks, this.players.length
       );
-      let roundScoreWithBonus = roundScore + roundBonusPoints;
+      let displayScore = null;
+      console.log(`round ${idx + 1} of ${finishedRounds.length}`);
+      if (idx + 1 === finishedRounds.length) {
+        // bonus score can only be calculated for rounds for which we have the scores
+        // of all players. this is not the case for the last round over which we
+        // iterate here
+        displayScore = `(${roundScore})`
+      }
+      else {
+        displayScore = roundScore + roundBonusPoints;
+      }
       // add table cell with the score
       let scoreCellElem = answerTableBodyRowElem.insertCell();
-      scoreCellElem.innerHTML = roundScoreWithBonus;
+      scoreCellElem.innerHTML = displayScore;
     });
 
     // draw the input table
@@ -579,6 +590,26 @@ class Game {
     return lastFinishedRound;
   }
 
+  getLastAnsweredRound(){
+    // get the most recent round that we (the player) added a full
+    // set of answers to, regardless of whether is round was already
+    // scored/ended or not
+
+    // make sure we're in play mode
+    if (this.uiState !== "play") {
+      console.error(`getLastAnsweredRound() called in mode ${this.uiState}`);
+      return null;
+    }
+    let lastAnswered = null
+    for (let i = this.rounds.length - 1; i >= 0; i--) {
+      if (this.answeredAll(this.rounds[i])) {
+        lastAnswered = this.rounds[i];
+        break;
+      }
+    }
+    return lastAnswered;
+  }
+
   startRound(letter) {
     // start a new round with a given letter
     this.rounds.push(new Round(letter));
@@ -594,9 +625,9 @@ class Game {
     this.players.push(player);
   }
 
-  answeredAll() {
+  answeredAll(round) {
     // check if we have answered all columns
-    return this.getCurrentRound().answers.filter(
+    return round.answers.filter(
       (answer) => answer.player.id === this.player.id
     ).length === this.columns.length;
   }
@@ -681,7 +712,7 @@ class Game {
       // send single answer to server
       this.sendSingleAnswerToServer(player, column, answer);
       // if the player gave an answer for every column, draw the point input table
-      if (this.uiState == 'play' && this.answeredAll()) {
+      if (this.uiState == 'play' && this.answeredAll(this.getCurrentRound())) {
         this.drawPointInputTable();
       }
     }
@@ -827,15 +858,9 @@ class Game {
     }
     // round scores message
     else if (messageType == "roundScores") {
-      if (this.uiState == "host") {
-        this.handleRoundScoresUpdate(data.payload);
-      }
-      else if (this.uiState == "play") {
-        // we're not supposed to get these
-        console.log('received round points message in play mode');
-        console.log('this should not happen');
-        console.log(data);
-      }
+      // handle regardless of being host or client
+      // (diffenentiation is done in method below)
+      this.handleRoundScoresUpdate(data);
     }
   }
 
@@ -990,22 +1015,39 @@ class Game {
     this.drawGameUi();
   }
 
-  handleRoundScoresUpdate(payload) {
-    console.log('handling round scores update by player');
-    let player = payload.player;
-    let roundScores = payload.roundScores;
+  handleRoundScoresUpdate(data) {
     // handle message from player sent at the end of a round
     // (contains scores for their answers of the round)
-    let lastFinishedRound = this.getLastFinishedRound();
+    console.log('handling round scores update by player');
+    let player = data.payload.player;
+    let roundScores = data.payload.roundScores;
+    let scoreUpdateRound = null;
+    if (this.uiState == "host") {
+      // if we're host, the round to asign the scores to
+      // should be finished b/c the end round signal is
+      // sent before the score update message
+      scoreUpdateRound = this.getLastFinishedRound();
+    }
+    else if (this.uiState == "play") {
+      // if we're a player, we need to get the last round
+      // for which we assigned a full set of answers,
+      // regardless of whether we already scored and ended
+      // it on our side
+      scoreUpdateRound = this.getLastAnsweredRound();
+    }
     for (let roundScore of roundScores) {
       // assign the score to the corresponding answers
-      lastFinishedRound.assignScoreToAnswer(
+      scoreUpdateRound.assignScoreToAnswer(
         player,
         roundScore.column,
         roundScore.score
       );
     }
-    this.drawGameUi();
+    if (this.uiState == "host") {
+      // send round scores message to all players
+      this.sendMessageToPlayers(data);
+      this.drawGameUi();
+    }
   }
 
   currentRoundUpdateMessage() {
