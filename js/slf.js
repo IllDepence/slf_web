@@ -364,12 +364,30 @@ class Game {
       // calculate the player score based on the their answers in all finished rounds
       let playerScore = 0;
       this.rounds.filter((round) => round.finished).forEach((round) => {
-        let playerAnswer = round.answers.find((answer) => answer.player.id == player.id);
-        if (playerAnswer != null) {
-          playerScore += playerAnswer.score;
-        }
-      }
-      );
+        // go through, column by column
+        let playerAnswerScoresRanks = []; // array of (<a_score>, <a_rank>) tuples
+        this.columns.forEach((column) => {
+          // get answers for the current column that have a score > 0 (don't want to
+          // assign answers a lower rank only b/c they were given later than a wrong
+          // answer)
+          let validCellAnswers = round.answers.filter(
+            (answer) => answer.column == column && answer.score != null && answer.score > 0
+          );
+          for (let i = 0; i < validCellAnswers.length; i++) {
+            let answer = validCellAnswers[i];
+            if (answer.player.id == player.id) {
+              playerAnswerScoresRanks.push([answer.score, i + 1]);
+            }
+          }
+        });
+        // add up all the answer scores in playerAnswerScoresRanks to get the round score
+        let roundScore = playerAnswerScoresRanks.reduce((sum, tup) => sum + tup[0], 0);
+        let roundBonusPoints = this.calcRoundBonusPoints(
+          playerAnswerScoresRanks, this.players.length
+        );
+        console.log(`${player.name}:${roundScore} (bonus: ${roundBonusPoints})`);
+        playerScore += roundScore + roundBonusPoints;
+      });
       row.insertCell().innerHTML = playerScore;
     });
   }
@@ -550,6 +568,75 @@ class Game {
     return this.getCurrentRound().answers.filter(
       (answer) => answer.player.id === this.player.id
     ).length === this.columns.length;
+  }
+
+  calcRankFactor(rank, numPlayers) {
+    // calculate a factor with diminishing returns for a “rank” in
+    // as list of player answers from first answer to last answer
+
+    // player rank mapped to range [1, 0]
+    let zeroBasedRank = rank - 1;
+    let rankOneToZero = (numPlayers - zeroBasedRank) / numPlayers;
+
+    // set everything below 0.5 to 0
+    let rankOneToHalf = rankOneToZero > 0.5 ? rankOneToZero : 0;
+
+    // square for diminishing returns
+    let rankFactor = Math.pow(rankOneToHalf, Math.E);
+
+    return rankFactor;
+  }
+
+  calcRoundBonusPoints(scoreRankTuples, numPlayers) {
+    // calculate the bonus points a player gets in a round based on
+    // a list of (<answer_score>, <answer_rank>) tuples and the
+    // number of players in the game
+
+    if (scoreRankTuples.length === 0) {
+      return 0;
+    }
+
+    let numCols = scoreRankTuples.length;
+    let fullRoundScore = scoreRankTuples.length * 10;
+    let factorSum = 0;
+
+    // iterate over answers
+    for (let i = 0; i < scoreRankTuples.length; i++) {
+      let score = scoreRankTuples[i][0];
+      let rank = scoreRankTuples[i][1];
+
+      // get answer rank factor
+      // - #1 -> 1.0     1.0
+      // - #2 -> 0.545   0.457
+      // - #3 -> 0.249   0.0
+      // - #4 -> 0.0     0.0
+      // - #5 -> 0.0
+      let rankFac = this.calcRankFactor(rank, numPlayers);
+
+      // calculate score factor
+      // - 20 -> 1
+      // - 10 -> 1
+      // -  5 -> 0.125
+      // -  0 -> 0
+      let scoreFac = Math.pow((Math.min(score, 10) / 10), 3);
+
+      // add up
+      // - all #1 w/ 10p -> number of columns
+      // - all #1 w/  5p -> 1/8th of num of cols
+      factorSum += rankFac * scoreFac;
+    }
+
+    // bonus factor is above sum (in the range of <num_cols>, 0)
+    // divided by the number of columns squared
+    // - all #1 w/ 10p -> 1
+    // - all #1 w/  5p -> 0.125
+    let bonusFac = Math.pow((factorSum / numCols), 2);
+
+    // bonus points are an added full round score in the ideal case
+    // but fall off quickly with fewer unique answers/higher ranks
+    let bonusPoints = fullRoundScore * bonusFac
+
+    return bonusPoints;
   }
 
   addAnswer(player, column, answer) {
