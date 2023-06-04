@@ -136,6 +136,14 @@ class Game {
     return str.replace(/[^a-zA-Z0-9]/g, "");
   }
 
+  requirePositiveInt(event) {
+    /* event listener for input fields to only allow positive numbers */
+
+    // check with input contains any non-digit characters
+    // and if so, remove them
+    event.target.value = event.target.value.replace(/\D/g, '');
+  }
+
   /* - - - - - - - UI - - - - - - - */
 
   setUiEventListeners() {
@@ -529,6 +537,8 @@ class Game {
     });
   }
 
+
+
   drawPointInputTable() {
     // make visible
     let pointInputTableElem = document.getElementById(this.#pointInputTableElemId);
@@ -536,14 +546,25 @@ class Game {
     // clear
     pointInputTableElem.innerHTML = "";
     let tableBodyElem = pointInputTableElem.createTBody();
-    // row with input fields
+    // row with header ("scores")
     let rowElem = tableBodyElem.insertRow();
+    let headerCellElem = rowElem.insertCell();
+    headerCellElem.innerHTML = "<strong>scores</strong>";
+    headerCellElem.classList.add("has-text-centered");
+    headerCellElem.colSpan = this.columns.length;
+    rowElem.insertCell(); // empty cell to compensate for the score column
+    // row with input fields
+    rowElem = tableBodyElem.insertRow();
     this.columns.forEach((column) => {
       let cellElem = rowElem.insertCell();
       let inputElem = document.createElement("input");
       inputElem.type = "text";
       inputElem.classList.add("input");
       inputElem.id = this.idSafe(`points_${column}`);
+      // set requirePositiveInt as event listener on input
+      inputElem.addEventListener("keyup", (event) => {
+        this.requirePositiveInt(event);
+      });
       cellElem.appendChild(inputElem);
     });
     // add one empty cell to compensate for the score column in the answer table
@@ -557,7 +578,7 @@ class Game {
     submitButtonElem.classList.add("input");
     submitButtonElem.classList.add("is-light");
     submitButtonElem.classList.add("is-success");
-    submitButtonElem.textContent = "submit";
+    submitButtonElem.textContent = "submit scores";
     cellElem.appendChild(submitButtonElem);
     // set event listener on submit button
     submitButtonElem.addEventListener("click", () => {
@@ -729,6 +750,10 @@ class Game {
     this.columns.forEach((column) => {
       let inputElem = document.getElementById(this.idSafe(`points_${column}`));
       let answerScore = parseInt(inputElem.value);
+      // set to 0 if NaN
+      if (isNaN(answerScore)) {
+        answerScore = 0;
+      }
       roundScores.push({
         column: column,
         score: answerScore
