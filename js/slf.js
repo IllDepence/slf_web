@@ -504,6 +504,7 @@ class Game {
       let inputTableBodyCellElem = inputTableBodyRowElem.insertCell();
       let inputElem = document.createElement("input");
       inputElem.id = this.#gameInputTableElemId + "-" + column;
+      inputElem.tabIndex = this.columns.indexOf(column) + 1;
       inputElem.type = "text";
       inputElem.classList.add('input');
       inputElem.addEventListener("keyup", (event) => {
@@ -512,6 +513,17 @@ class Game {
           this.addAnswer(this.player, column, inputElem.value);
           // disable the input element
           inputElem.disabled = true;
+          // jump to the next input element that is not disabled
+          let nextColumn = null;
+          for (let i = 0; i < this.columns.length; i++) {
+            let nextColumnIdx = (this.columns.indexOf(column) + 1 + i) % this.columns.length;
+            let nextColumn = this.columns[nextColumnIdx];
+            let nextInputElem = document.getElementById(this.#gameInputTableElemId + "-" + nextColumn);
+            if (!nextInputElem.disabled) {
+              nextInputElem.focus();
+              break;
+            }
+          }
         }
       });
       inputTableBodyCellElem.appendChild(inputElem);
