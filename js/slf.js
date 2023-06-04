@@ -400,8 +400,8 @@ class Game {
         });
         // add up all the answer scores in playerAnswerScoresRanks to get the round score
         let roundScore = playerAnswerScoresRanks.reduce((sum, tup) => sum + tup[0], 0);
-        let roundBonusPoints = this.calcRoundBonusPoints(
-          playerAnswerScoresRanks, this.players.length
+        let roundBonusPointsWithExplanation = this.calcRoundBonusPoints(
+          playerAnswerScoresRanks, this.players.length, this.rounds.length
         );
         playerScore += roundScore + roundBonusPoints;
       });
@@ -447,14 +447,20 @@ class Game {
         let validCellAnswers = cellAnswers.filter(
           (answer) => answer.score != null && answer.score > 0
         );
+        let foundMyAnswer = false;
         for (let i = 0; i < validCellAnswers.length; i++) {
           let answer = validCellAnswers[i];
           if (answer.player.id == this.player.id) {
+            foundMyAnswer = true;
             // take note of score and rank
             playerAnswerScoresRanks.push([answer.score, i + 1]);
             // take note of players answer
             myAnswer = answer;
           }
+        }
+        // if no valid answer was found, add a placeholder
+        if (!foundMyAnswer) {
+          playerAnswerScoresRanks.push([0, null]);
         }
         // add answer to the table
         let answerTableBodyCellElem = answerTableBodyRowElem.insertCell();
@@ -474,11 +480,12 @@ class Game {
       });
       // calculate score for the table row
       let roundScore = playerAnswerScoresRanks.reduce((sum, tup) => sum + tup[0], 0);
-      let roundBonusPoints = this.calcRoundBonusPoints(
-        playerAnswerScoresRanks, this.players.length
+      let roundBonusPointsWithExplanation = this.calcRoundBonusPoints(
+        playerAnswerScoresRanks, this.players.length, this.rounds.length
       );
+      let roundBonusPoints = roundBonusPointsWithExplanation.points;
+      let roundBonusPointsExplanation = roundBonusPointsWithExplanation.explanation;
       let displayScore = null;
-      console.log(`round ${idx + 1} of ${finishedRounds.length}`);
       if (idx + 1 === finishedRounds.length) {
         // bonus score can only be calculated for rounds for which we have the scores
         // of all players. this is not the case for the last round over which we
@@ -486,7 +493,7 @@ class Game {
         displayScore = `(${roundScore})`
       }
       else {
-        displayScore = roundScore + roundBonusPoints;
+        displayScore = `<span title="${roundBonusPointsExplanation}">${roundScore + roundBonusPoints}</span>`;
       }
       // add table cell with the score
       let scoreCellElem = answerTableBodyRowElem.insertCell();
@@ -678,6 +685,11 @@ class Game {
     // calculate a factor with diminishing returns for a “rank” in
     // as list of player answers from first answer to last answer
 
+    // if rank is null, return 0
+    if (rank === null) {
+      return 0;
+    }
+
     // player rank mapped to range [1, 0]
     let zeroBasedRank = rank - 1;
     let rankOneToZero = (numPlayers - zeroBasedRank) / numPlayers;
@@ -691,18 +703,25 @@ class Game {
     return rankFactor;
   }
 
-  calcRoundBonusPoints(scoreRankTuples, numPlayers) {
+  calcRoundBonusPoints(scoreRankTuples, numPlayers, numCols) {
     // calculate the bonus points a player gets in a round based on
     // a list of (<answer_score>, <answer_rank>) tuples and the
     // number of players in the game
 
+    let bonusExplanation = "Bonus point calculation:\n";
+    let ret = {
+      points: 0,
+      explanation: bonusExplanation,
+    };
+
     if (scoreRankTuples.length === 0) {
-      return 0;
+      ret.explanation += "-";
+      return ret;
     }
 
-    let numCols = scoreRankTuples.length;
-    let fullRoundScore = scoreRankTuples.length * 10;
+    let fullRoundScore = numCols * 10;
     let factorSum = 0;
+    let factors = [];
 
     // iterate over answers
     for (let i = 0; i < scoreRankTuples.length; i++) {
@@ -728,6 +747,8 @@ class Game {
       // - all #1 w/ 10p -> number of columns
       // - all #1 w/  5p -> 1/8th of num of cols
       factorSum += rankFac * scoreFac;
+      // keep track of factors (for explanability)
+      factors.push([rankFac, scoreFac]);
     }
 
     // bonus factor is above sum (in the range of <num_cols>, 0)
@@ -743,7 +764,32 @@ class Game {
     // round to integer
     bonusPoints = Math.round(bonusPoints);
 
-    return bonusPoints;
+    // build explanation
+    // we start of with shwoing how the sum of bonus factors got calculated
+    // format: "Σ( [<rankFac>, <scoreFac>], ... ) = <factorSum>"
+    bonusExplanation += "Σ(\n";
+    for (let i = 0; i < factors.length; i++) {
+      // render the score factor as 1, ⅛, or 0
+      let scoreFacTextDict = {
+        1: "1",
+        0.125: "⅛",
+        0: "0",
+      };
+      let scoreFacText = scoreFacTextDict[factors[i][1]];
+      bonusExplanation += `   [${factors[i][0].toFixed(3)}, ${scoreFacText}]\n`;
+    }
+    bonusExplanation += `) = ${factorSum.toFixed(3)}\n`;
+    // next we show the division by the number of columns squared
+    // format: "(<factorSum> / <numCols>)² = <bonusFac>"
+    bonusExplanation += `(${factorSum.toFixed(3)} / ${numCols})² = ${bonusFac.toFixed(3)}\n`;
+    // next we show the multiplication with the full round score to the power of 2
+    // format: "(<bonusFac> × <fullRoundScore>)² = <bonusPoints>"
+    bonusExplanation += `${bonusFac.toFixed(3)} × ${fullRoundScore} ≈ ${bonusPoints}\n`;
+
+    ret.points = bonusPoints;
+    ret.explanation = bonusExplanation;
+
+    return ret;
   }
 
   addAnswer(player, column, answer) {
