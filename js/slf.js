@@ -66,6 +66,10 @@ class Round {
 
 class Game {
 
+  // global element IDs
+  #redrawUiMenuButtonElemId = "redrawUiMenuButton";
+  #resetGameMenuButtonElemId = "resetGameMenuButton";
+  #resetGameButtonElemId = "resetGameButton";
   // init view element IDs
   #startScreenElemId = "startScreen";
   #initPlayButtonElemId = "initPlayButton";
@@ -147,6 +151,12 @@ class Game {
   /* - - - - - - - UI - - - - - - - */
 
   setUiEventListeners() {
+    document.getElementById(this.#redrawUiMenuButtonElemId).addEventListener('click', () => {
+      this.drawGameUi();
+    });
+    document.getElementById(this.#resetGameMenuButtonElemId).addEventListener('click', () => {
+      this.resetGame();
+    });
     document.getElementById(this.#initHostButtonElemId).addEventListener('click', () => {
       this.setUiState("host");
     });
@@ -538,7 +548,6 @@ class Game {
   }
 
 
-
   drawPointInputTable() {
     // make visible
     let pointInputTableElem = document.getElementById(this.#pointInputTableElemId);
@@ -781,6 +790,43 @@ class Game {
     this.endRound();
     this.drawGameUi();
   }
+
+  resetGame() {
+    // re-enables the column input and adds a reset game button
+    // which when clicked removes all rounds and sends the
+    // new columns to the players
+
+    // if we’re not in host mode, do nothing
+    if (this.uiState != 'host') {
+      return;
+    }
+    // re-enable column input
+    let gameColumnsInput = document.getElementById(this.#gameColumnsInputElemId);
+    gameColumnsInput.disabled = false;
+    let gameColumnsSet = document.getElementById(this.#gameColumnsSetElemId);
+    gameColumnsSet.classList.add('is-warning');
+    gameColumnsSet.innerText = "Update Columns";
+    // add new button to push reset game state to players
+    let parentElem = gameColumnsSet.parentElement;
+    let resetGameButton = document.createElement('button');
+    resetGameButton.id = this.#resetGameButtonElemId;
+    resetGameButton.classList.add('button');
+    resetGameButton.classList.add('is-danger');
+    resetGameButton.innerText = "Reset Game";
+    resetGameButton.addEventListener('click', () => {
+      // remove all rounds
+      this.rounds = [];
+      // propagate game state to players
+      this.sendGameStateToPlayers();
+      // remove reset button
+      let resetGameButton = document.getElementById(this.#resetGameButtonElemId);
+      resetGameButton.remove();
+      // re-draw game UI
+      this.drawGameUi();
+    });
+    parentElem.insertAdjacentElement('beforeend', resetGameButton);
+  }
+
 
   /* - - - - - - - network > general - - - - - - - */
 
