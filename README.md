@@ -24,6 +24,8 @@
 
 ##### Cities
 
+<details><summary>initial tests</summary>
+
 * [City](https://www.wikidata.org/wiki/Q515): 9,100
     * w/ population: 5,995
 * [also City](https://www.wikidata.org/wiki/Q15253706)?
@@ -49,4 +51,93 @@ WHERE
   ?city wdt:P31 wd:Q486972.
   ?city wdt:P1082 ?population.
 }
+```
+
+</details>
+
+Query for number of municipalities with population information (208,673).  
+(using human settlement, only 89,706)
+
+```
+SELECT (COUNT(?mu) AS ?count)
+WHERE
+{
+  ?submu wdt:P279* wd:Q15284.
+  ?mu wdt:P31 ?submu.
+  ?mu wdt:P1082 ?population.
+}
+```
+
+Municipalities next to or in a body of water (Germany as example). As below includes rivers which could be filtered.
+
+```
+SELECT ?mu ?muLabel ?wtrLabel
+WHERE
+{
+  ?musubclass wdt:P279* wd:Q15284.
+  ?mu wdt:P31 ?musubclass.
+  ?mu wdt:P17 wd:Q183. # P17: "country", Q183: "Germany"
+  ?mu wdt:P206 ?wtr.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "de,en". }
+}
+```
+
+
+##### Types of X
+
+```
+SELECT ?subcls ?subclsLabel
+WHERE
+{
+  ?subcls wdt:P279* wd:Q15324.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "de". }
+}
+```
+
+* Gewässer
+    * Ozean
+    * Wasserfall
+    * Flussarm
+    * Priel
+    * Bucht
+    * Loch (e.g. Loch Ness)
+    * Sumpf
+    * Eisberg
+    * Unterwasser-Solebecken
+    * Wellenbad
+    * Privatbrunnen
+* Naturerscheinung
+    * Leben
+    * Föhn
+    * Dämmerung
+    * Bodenerosion
+    * Doppelregenbogen
+    * Sternfleck
+    * Superblüte
+    * Sonnenwende
+    * Gravitationskollaps
+    * Haarfarbe
+    * Heißer Tag
+    * Eiallergie
+    * Eifersuchtswahn
+* geografische Entität von Menschenhand
+    * Kornkreis
+    * Mautbrücke
+    * Zoo
+
+##### Entertainment
+
+TV series by number of episodes
+
+```
+SELECT ?tvseries ?tvseriesLabel ?numeps
+WHERE
+{
+  ?subcls wdt:P279* wd:Q5398426.
+  ?tvseries wdt:P31 ?subcls.
+  ?tvseries wdt:P1113 ?numeps.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "de". }
+}
+ORDER BY DESC(?numeps)
+LIMIT 100000
 ```
