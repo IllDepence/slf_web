@@ -390,7 +390,10 @@ class Game {
           // answer)
           let validCellAnswers = round.answers.filter(
             (answer) => answer.column == column && answer.score != null && answer.score > 0
-          );  // FIXME: this does not work right now b/c players don’t communicate their scores
+          );  // FIXME: check if this works or not
+          // (old comment read “this does not work right now b/c
+          //  players don’t communicate their scores”, but given
+          //  some brief testing in the UI it seems to work)
           for (let i = 0; i < validCellAnswers.length; i++) {
             let answer = validCellAnswers[i];
             if (answer.player.id == player.id) {
@@ -401,9 +404,9 @@ class Game {
         // add up all the answer scores in playerAnswerScoresRanks to get the round score
         let roundScore = playerAnswerScoresRanks.reduce((sum, tup) => sum + tup[0], 0);
         let roundBonusPointsWithExplanation = this.calcRoundBonusPoints(
-          playerAnswerScoresRanks, this.players.length, this.rounds.length
+          playerAnswerScoresRanks, this.players.length, this.columns.length
         );
-        playerScore += roundScore + roundBonusPoints;
+        playerScore += roundScore + roundBonusPointsWithExplanation.points;
       });
       row.insertCell().innerHTML = playerScore;
     });
@@ -481,7 +484,7 @@ class Game {
       // calculate score for the table row
       let roundScore = playerAnswerScoresRanks.reduce((sum, tup) => sum + tup[0], 0);
       let roundBonusPointsWithExplanation = this.calcRoundBonusPoints(
-        playerAnswerScoresRanks, this.players.length, this.rounds.length
+        playerAnswerScoresRanks, this.players.length, this.columns.length
       );
       let roundBonusPoints = roundBonusPointsWithExplanation.points;
       let roundBonusPointsExplanation = roundBonusPointsWithExplanation.explanation;
