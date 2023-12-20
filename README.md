@@ -1,6 +1,27 @@
 # Stadt, Land, Fluss (web)
 
-## TODO
+Stadt, Land, Fluss für den Browser.
+
+![](doc/game_overview.png)
+
+1. In einem Browser Spiel hosten und Kategorien festlegen
+2. Mit anderen Browsern dem Spiel beitreten
+3. Fertig
+
+## Features
+
+![](doc/features.png)
+
+* Live-Anzeige wenn Mitspieler Antworten einloggen
+* Bonus-Punkte auf Basis von Antwortreihenfolge
+* Standard-Punkte (0, 5, 10, 20) wie manuell vergeben
+
+## Technik
+
+* Implementiert mit [PeerJS](https://peerjs.com/)
+* UI mit [BULMA](https://bulma.io/)
+
+# WIP Notes
 
 * functional improvements
     * ...
