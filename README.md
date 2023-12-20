@@ -12,9 +12,9 @@ Stadt, Land, Fluss für den Browser.
 
 ![](doc/features.png)
 
-* Live-Anzeige wenn Mitspieler Antworten einloggen
+* Live-Anzeige wann Mitspieler Antworten einloggen
 * Bonus-Punkte auf Basis von Antwortreihenfolge
-* Standard-Punkte (0, 5, 10, 20) wie manuell vergeben
+* Standard-Punkte (0, 5, 10, 20) wie üblich manuell vergeben
 
 ## Technik
 
